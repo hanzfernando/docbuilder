@@ -9,7 +9,7 @@ const createUserAccount = async (req, res) => {
         // Validate required fields
         if (!firstname || !lastname || !email || !password || !role || !organization) {
             return res.status(400).json({
-                message: 'All fields are required: firstname, lastname, email, password, role, organization'
+                message: 'All fields are required: firstname, lastname, email, password, role, organization',
             });
         }
 
@@ -17,7 +17,7 @@ const createUserAccount = async (req, res) => {
         const allowedRoles = ['student', 'organization'];
         if (!allowedRoles.includes(role)) {
             return res.status(400).json({
-                message: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`
+                message: `Invalid role. Allowed roles: ${allowedRoles.join(', ')}`,
             });
         }
 
@@ -43,23 +43,27 @@ const createUserAccount = async (req, res) => {
             organization
         );
 
+        // Populate organization for the response
+        const populatedUser = await User.findById(newUser._id).populate('organization', 'name');
+
         // Response
         res.status(201).json({
             message: 'User account created successfully',
             user: {
-                id: newUser._id,
-                firstname: newUser.firstname,
-                lastname: newUser.lastname,
-                email: newUser.email,
-                role: newUser.role,
-                organization: orgExists.name
-            }
+                _id: populatedUser._id, // Ensure _id is included
+                firstname: populatedUser.firstname,
+                lastname: populatedUser.lastname,
+                email: populatedUser.email,
+                role: populatedUser.role,
+                organization: populatedUser.organization?.name || null, // Ensure null for superadmin
+            },
         });
     } catch (error) {
         console.error('Error creating user account:', error.message);
         res.status(500).json({ message: 'Failed to create user account', error: error.message });
     }
 };
+
 
 const getUsers = async (req, res) => {
     try {
