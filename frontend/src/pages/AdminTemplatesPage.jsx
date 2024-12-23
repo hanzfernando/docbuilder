@@ -1,5 +1,5 @@
-
 import { useNavigate } from 'react-router-dom';
+import TemplateListContainer from '../components/TemplateListContainer';
 
 const AdminTemplatesPage = () => {
     const navigate = useNavigate();
@@ -18,6 +18,7 @@ const AdminTemplatesPage = () => {
             >
                 Create New Template
             </button>
+            <TemplateListContainer />
         </div>
     );
 };

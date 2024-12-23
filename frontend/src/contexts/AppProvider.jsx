@@ -2,12 +2,15 @@ import PropTypes from 'prop-types';
 import { AuthProvider } from './AuthContext';
 import { OrganizationProvider } from './OrganizationContext';
 import { UserProvider } from './UserContext';
+import { TemplateProvider } from './TemplateContext';
 const AppProvider = ({ children }) => {
     return (
         <AuthProvider>
             <UserProvider>
                 <OrganizationProvider>
-                    {children}
+                    <TemplateProvider>
+                        {children}
+                    </TemplateProvider>
                 </OrganizationProvider>
             </UserProvider> 
         </AuthProvider>

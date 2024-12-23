@@ -7,6 +7,7 @@ import connectDB from './config/database.js'
 import superAdminRoutes from './routes/superAdminRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import templateRoutes from './routes/templateRoutes.js';
 
 dotenv.config()
 
@@ -27,6 +28,7 @@ app.use(cors({
 app.use('/api/auth', authRoutes); 
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/templates', templateRoutes);
 
 connectDB()
     .then(async () => {

@@ -70,6 +70,7 @@ const App = () => {
                     <Route path="/users" element={<AdminUsersPage />} />
                     <Route path="/templates" element={<AdminTemplatesPage />} />
                     <Route path="/template-creation" element={<AdminTemplateCreationPage />} />
+                    <Route path="/templates/:id" element={<AdminTemplateCreationPage />} />
                 </Route>
             </>
         )

@@ -10,15 +10,21 @@ const templateSchema = new mongoose.Schema(
             type: String, 
             required: true 
         },  // This can store HTML content, or you can serialize a WYSIWYG format
-        placeholders: [ // Placeholder definitions with assigned questions
-            {
-              key: { type: String, required: true }, // Placeholder key (e.g., {{name}})
-              question: { type: String, required: true }, // Question to display for this placeholder
-            },
-          ],
+        type: {
+            type: String,      
+            required: true
+        },
+        subtype: {
+            type: String,           
+        },
+        paperSize: {
+            type: String,
+            enum: ['letter', 'legal', 'a4'],
+            required: true
+        },
         requiredRole: { 
             type: String, 
-            enum: ['faculty', 'registrar', 'student'],
+            enum: ['organization', 'student'],
             required: true
         },
         organization: { 
