@@ -3,9 +3,13 @@ import { useTemplateContext } from '../hooks/useTemplateContext';
 import { fetchTemplates } from '../services/templateService';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../utils/authUtil';
+import { useAuthContext } from '../hooks/useAuthContext'; // Assuming you have this hook to get user info
+
 const TemplateListContainer = () => {
     const { templates, loading, error, dispatch } = useTemplateContext();
+    const { user } = useAuthContext(); // Get user from auth context
     const navigate = useNavigate();
+
     useEffect(() => {
         const loadTemplates = async () => {
             dispatch({ type: 'SET_LOADING', payload: true });
@@ -51,7 +55,13 @@ const TemplateListContainer = () => {
                             </p>
                             <button
                                 className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
-                                onClick={() => navigate(`/templates/${template._id}`)} // Redirect to the detail page
+                                onClick={() =>
+                                    navigate(
+                                        user.role === 'admin'
+                                            ? `/templates/${template._id}`
+                                            : `/user-templates/${template._id}`
+                                    )
+                                }
                             >
                                 View Template
                             </button>

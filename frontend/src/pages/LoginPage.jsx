@@ -43,8 +43,9 @@ const LoginPage = () => {
                 return '/admins';
             case 'admin':
                 return '/users';
-            case 'user':
-                return '/profile';
+            case 'student':
+            case 'organization':
+                return '/user-templates';
             default:
                 return '/';
         }

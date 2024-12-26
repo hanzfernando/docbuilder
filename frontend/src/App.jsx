@@ -10,26 +10,29 @@ import PropTypes from 'prop-types';
 // Import Auth Context Hook
 import { useAuthContext } from './hooks/useAuthContext';
 // Import Layouts
-
 import AuthLayout from './layouts/AuthLayout';
 import MainLayout from './layouts/MainLayout';
 // Import Pages
-
 import LoginPage from './pages/LoginPage';
 import SuperAdminAdminsPage from './pages/SuperAdminAdminsPage.jsx';
 import SuperAdminOrganizationsPage from './pages/SuperAdminOrganizationsPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage.jsx';
 import AdminTemplatesPage from './pages/AdminTemplatesPage.jsx';
 import AdminTemplateCreationPage from './pages/AdminTemplateCreationPage.jsx';
+import UserTemplatesPage from './pages/UserTemplatesPage.jsx';
+import UserViewTemplatePage from './pages/UserViewTemplatePage.jsx';
+
 // Protected Route Wrapper
-const ProtectedRoute = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRoles }) => {
     const { user } = useAuthContext();
     console.log(user);
+
     if (!user) {
         return <Navigate to="/login" replace />;
     }
 
-    if (requiredRole && user.role !== requiredRole) {
+    // Check if user role matches any of the allowed roles
+    if (requiredRoles && !requiredRoles.includes(user.role)) {
         return <Navigate to="/" replace />;
     }
 
@@ -50,7 +53,7 @@ const App = () => {
                 {/* Protected SuperAdmin Routes */}
                 <Route
                     element={
-                        <ProtectedRoute requiredRole="superadmin">
+                        <ProtectedRoute requiredRoles={['superadmin']}>
                             <MainLayout />
                         </ProtectedRoute>
                     }
@@ -59,10 +62,10 @@ const App = () => {
                     <Route path="/organizations" element={<SuperAdminOrganizationsPage />} />
                 </Route>
 
-                {/* Protected SuperAdmin Routes */}
+                {/* Protected Admin Routes */}
                 <Route
                     element={
-                        <ProtectedRoute requiredRole="admin">
+                        <ProtectedRoute requiredRoles={['admin']}>
                             <MainLayout />
                         </ProtectedRoute>
                     }
@@ -72,6 +75,18 @@ const App = () => {
                     <Route path="/template-creation" element={<AdminTemplateCreationPage />} />
                     <Route path="/templates/:id" element={<AdminTemplateCreationPage />} />
                 </Route>
+
+                {/* Protected Student and Organization Routes */}
+                <Route
+                    element={
+                        <ProtectedRoute requiredRoles={['student', 'organization']}>
+                            <MainLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route path="/user-templates" element={<UserTemplatesPage />} />
+                    <Route path="/user-templates/:id" element={<UserViewTemplatePage />} />
+                </Route>
             </>
         )
     );
@@ -79,9 +94,10 @@ const App = () => {
     return <RouterProvider router={router} />;
 };
 
+// PropTypes Validation
 ProtectedRoute.propTypes = {
-    children: PropTypes.node,
-    requiredRole: PropTypes.string,
+    children: PropTypes.node.isRequired,
+    requiredRoles: PropTypes.arrayOf(PropTypes.string), // Support multiple roles
 };
 
 export default App;

@@ -18,11 +18,15 @@ const SideNavigationBar = () => {
             { name: 'Users', path: '/users' },
             { name: 'Templates', path: '/templates' },
         ]
-        // ,
-        // user: [
-        //     { name: 'Profile', path: '/profile' },
-        //     { name: 'Documents', path: '/documents' },
-        // ],
+        ,
+        organization: [
+            { name: 'Templates', path: '/user-templates' },
+            { name: 'Documents', path: '/documents' },
+        ],
+        student: [
+            { name: 'Templates', path: '/user-templates' },
+            { name: 'Documents', path: '/documents' },
+        ],
     };
 
     const items = navItems[user?.role] || [];
