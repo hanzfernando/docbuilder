@@ -3,13 +3,16 @@ import { AuthProvider } from './AuthContext';
 import { OrganizationProvider } from './OrganizationContext';
 import { UserProvider } from './UserContext';
 import { TemplateProvider } from './TemplateContext';
+import { DocumentProvider } from './DocumentContext';
 const AppProvider = ({ children }) => {
     return (
         <AuthProvider>
             <UserProvider>
                 <OrganizationProvider>
                     <TemplateProvider>
+                        <DocumentProvider>
                         {children}
+                        </DocumentProvider>
                     </TemplateProvider>
                 </OrganizationProvider>
             </UserProvider> 

@@ -33,10 +33,21 @@ const templateReducer = (state, action) => {
             return { ...state, loading: action.payload };
         case 'SET_ERROR':
             return { ...state, error: action.payload, loading: false };
+        case 'LOGOUT':
+            return { ...initialState };
+        // case 'FILTER_TEMPLATES':
+        //     {const { type, subtype } = action.payload;
+        //     const filteredTemplates = state.templates.filter((template) => {
+        //         const matchesType = !type || template.type === type;
+        //         const matchesSubtype = !subtype || template.subtype?.toLowerCase() === subtype.toLowerCase();
+        //         return matchesType && matchesSubtype;
+        //     });
+        //     return { ...state, templates: filteredTemplates, loading: false };}
         default:
             return state;
     }
 };
+
 
 // Create context
 const TemplateContext = createContext();

@@ -19,11 +19,7 @@ const organizationReducer = (state, action) => {
                 organizations: state.organizations.filter(org => org._id !== action.payload),
             };
         case 'LOGOUT':
-            return {
-                organizations: [],
-                loading: false,
-                error: null,
-            }; // Reset organization state on logout
+            return { ...initialState };
         default:
             return state;
     }

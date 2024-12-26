@@ -52,4 +52,13 @@ const requireSuperAdmin = (req, res, next) => {
     next()
 }
 
-export { authToken, requireAdmin, requireSuperAdmin }
+const requireUser = (req, res, next) => {
+
+    const { role } = req.user
+    if(role !== 'student' && role !== 'organization') {
+        return res.status(401).json({ message: 'Access Denied' })
+    }
+    next()
+}
+
+export { authToken, requireAdmin, requireSuperAdmin, requireUser }

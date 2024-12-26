@@ -45,6 +45,28 @@ const getTemplateById = async (req, res) => {
     }
 };
 
+const getTemplateHeaderById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role, organization } = req.user;
+
+        // Query based on role
+        const query = role === 'admin'
+            ? { _id: id, organization }
+            : { _id: id, requiredRole: role, organization };
+
+            const template = await Template.findOne(query).select('-content');
+
+        if (!template) {
+            return res.status(404).json({ message: 'Template not found or access denied' });
+        }
+
+        res.status(200).json(template);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching template', error: error.message });
+    }
+}
+
 // Create Template
 const createTemplate = async (req, res) => {
     try {
@@ -119,4 +141,63 @@ const deleteTemplate = async (req, res) => {
     }
 };
 
-export { getTemplates, getTemplateById, createTemplate, updateTemplate, deleteTemplate };
+const fetchDecisionTree = async (req, res) => {
+    try {
+        const { organization, role } = req.user; // Extract organization and role from user info
+
+        if (!organization) {
+            return res.status(400).json({ message: 'Organization ID is required' });
+        }
+
+        // Build query based on user role
+        const query = { organization };
+
+        // If the user's role is not admin, filter by `requiredRole`
+        if (role !== 'admin') {
+            query.requiredRole = role; // Only fetch templates that match the user's role
+        }
+
+        // Fetch templates matching the query
+        const templates = await Template.find(query);
+
+        const decisionTree = {};
+
+        templates.forEach((template) => {
+            const { type, subtype, name, _id, requiredRole } = template; // Include additional fields
+
+            if (!decisionTree[type]) {
+                decisionTree[type] = { subtype: {} };
+            }
+
+            if (subtype) {
+                if (!decisionTree[type].subtype[subtype]) {
+                    decisionTree[type].subtype[subtype] = [];
+                }
+                decisionTree[type].subtype[subtype].push({
+                    name,
+                    id: _id,
+                    requiredRole, // Include other fields if necessary
+                });
+            } else {
+                if (!decisionTree[type].names) {
+                    decisionTree[type].names = [];
+                }
+                decisionTree[type].names.push({
+                    name,
+                    id: _id,
+                    requiredRole, // Include other fields if necessary
+                });
+            }
+        });
+
+        res.status(200).json(decisionTree);
+    } catch (error) {
+        console.error('Error generating decision tree:', error.message);
+        res.status(500).json({ message: 'Error generating decision tree', error: error.message });
+    }
+};
+
+
+
+
+export { getTemplates, getTemplateById, getTemplateHeaderById, createTemplate, updateTemplate, deleteTemplate, fetchDecisionTree };

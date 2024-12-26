@@ -8,6 +8,7 @@ import superAdminRoutes from './routes/superAdminRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import templateRoutes from './routes/templateRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 
 dotenv.config()
 
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/superadmin', superAdminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/documents', documentRoutes);
 
 connectDB()
     .then(async () => {

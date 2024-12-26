@@ -44,6 +44,19 @@ const getTemplateById = async (templateId, token) => {
     }
 };
 
+const getTemplateHeaderById = async (templateId, token) => {
+    try {
+        const response = await axios.get(`${API_URL}/headers/${templateId}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch template header');
+    }
+}
+
 const updateTemplate = async (templateId, templateData, token) => {
     const config = {
         headers: {
@@ -59,4 +72,19 @@ const updateTemplate = async (templateId, templateData, token) => {
     }
 };
 
-export { createTemplate, fetchTemplates, getTemplateById, updateTemplate };
+const fetchDecisionTree = async (token) => {
+    try {
+        const response = await axios.get(`${API_URL}/decision-tree`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(
+            error.response?.data?.message || 'Failed to fetch decision tree'
+        );
+    }
+};
+
+export { createTemplate, fetchTemplates, getTemplateById, updateTemplate, fetchDecisionTree, getTemplateHeaderById };

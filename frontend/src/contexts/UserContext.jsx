@@ -19,11 +19,7 @@ const userReducer = (state, action) => {
                 users: state.users.filter(user => user._id !== action.payload),
             };
         case 'LOGOUT':
-            return {
-                users: [],
-                loading: false,
-                error: null,
-            }; // Reset user state on logout
+            return { ...initialState };
         default:
             return state;
     }

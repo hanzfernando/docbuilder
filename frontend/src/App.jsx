@@ -21,6 +21,9 @@ import AdminTemplatesPage from './pages/AdminTemplatesPage.jsx';
 import AdminTemplateCreationPage from './pages/AdminTemplateCreationPage.jsx';
 import UserTemplatesPage from './pages/UserTemplatesPage.jsx';
 import UserViewTemplatePage from './pages/UserViewTemplatePage.jsx';
+import UserDocumentsPage from './pages/UserDocumentsPage.jsx';
+import UserDocumentCreationPage from './pages/UserDocumentCreationPage.jsx';
+
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requiredRoles }) => {
@@ -86,6 +89,9 @@ const App = () => {
                 >
                     <Route path="/user-templates" element={<UserTemplatesPage />} />
                     <Route path="/user-templates/:id" element={<UserViewTemplatePage />} />
+                    <Route path="/documents" element={<UserDocumentsPage />} />
+                    <Route path="/documents/:id" element={<UserDocumentCreationPage />} />
+                    <Route path="/document-creation/:templateId" element={<UserDocumentCreationPage />} />
                 </Route>
             </>
         )
