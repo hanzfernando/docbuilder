@@ -113,26 +113,26 @@ const DocumentContainer = () => {
         );
     };
 
-    const handleAddPage = () => {
-        setPages((prevPages) => [
-            ...prevPages,
-            { id: prevPages.length + 1, content: '' },
-        ]);
-        setCurrentPage(pages.length + 1);
-    };
+    // const handleAddPage = () => {
+    //     setPages((prevPages) => [
+    //         ...prevPages,
+    //         { id: prevPages.length + 1, content: '' },
+    //     ]);
+    //     setCurrentPage(pages.length + 1);
+    // };
 
-    const handleDeletePage = () => {
-        if (pages.length > 1) {
-            const confirmed = window.confirm('Are you sure you want to delete this page?');
-            if (confirmed) {
-                const newPages = pages.filter((page) => page.id !== currentPage);
-                setPages(newPages);
-                setCurrentPage((prev) => (prev > newPages.length ? newPages.length : prev));
-            }
-        } else {
-            alert('You cannot delete the last page!');
-        }
-    };
+    // const handleDeletePage = () => {
+    //     if (pages.length > 1) {
+    //         const confirmed = window.confirm('Are you sure you want to delete this page?');
+    //         if (confirmed) {
+    //             const newPages = pages.filter((page) => page.id !== currentPage);
+    //             setPages(newPages);
+    //             setCurrentPage((prev) => (prev > newPages.length ? newPages.length : prev));
+    //         }
+    //     } else {
+    //         alert('You cannot delete the last page!');
+    //     }
+    // };
 
     const handleNextPage = () => {
         if (currentPage < pages.length) {
@@ -278,8 +278,55 @@ const DocumentContainer = () => {
                                 toolbar:
                                     'undo redo | formatselect | bold italic backcolor | ' +
                                     'alignleft aligncenter alignright alignjustify | ' +
-                                    'bullist numlist outdent indent | removeformat | help',
+                                    'bullist numlist outdent indent | addHangingIndent removeHangingIndent | removeformat | help',
                                 content_style: sharedStyles,
+                                setup: (editor) => {
+                                    // Add Hanging Indent Button
+                                    editor.ui.registry.addButton('addHangingIndent', {
+                                        text: 'Hanging Indent',
+                                        icon: 'indent',
+                                        tooltip: 'Add Hanging Indent',
+                                        onAction: () => {
+                                            const selectedNode = editor.selection.getNode(); // Get the selected node
+                                            const isParagraph = selectedNode.nodeName === 'P'; // Check if it's a <p> element
+                                
+                                            if (isParagraph) {
+                                                // Update the style directly for <p> elements
+                                                selectedNode.style.textIndent = '-40px';
+                                                selectedNode.style.marginLeft = '40px';
+                                            } else {
+                                                // Wrap in a <p> if not already a block element
+                                                const content = editor.selection.getContent({ format: 'html' });
+                                                editor.selection.setContent(
+                                                    `<p style="text-indent: -40px; margin-left: 40px;">${content}</p>`
+                                                );
+                                            }
+                                        },
+                                    });
+                                
+                                    // Remove Hanging Indent Button
+                                    editor.ui.registry.addButton('removeHangingIndent', {
+                                        text: 'Remove Hanging Indent',
+                                        icon: 'outdent',
+                                        tooltip: 'Remove Hanging Indent',
+                                        onAction: () => {
+                                            const selectedNode = editor.selection.getNode(); // Get the selected node
+                                            const isParagraph = selectedNode.nodeName === 'P'; // Check if it's a <p> element
+                                
+                                            if (isParagraph) {
+                                                // Remove the hanging indent styles
+                                                selectedNode.style.textIndent = '';
+                                                selectedNode.style.marginLeft = '';
+                                            } else {
+                                                // Handle nested <p> tags (if any)
+                                                const content = editor.selection.getContent({ format: 'html' });
+                                                editor.selection.setContent(
+                                                    content.replace(/<p[^>]*style=["'][^"']*text-indent:\s*-40px;?\s*margin-left:\s*40px;?[^"']*["'][^>]*>(.*?)<\/p>/g, '$1')
+                                                );
+                                            }
+                                        },
+                                    });
+                                },                                                 
                             }}
                             onEditorChange={(content) => handleEditorChange(content, page.id)}
                         />

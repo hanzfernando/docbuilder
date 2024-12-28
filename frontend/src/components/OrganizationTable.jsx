@@ -8,7 +8,7 @@ const OrganizationTable = ({ organizations }) => {
                     <tr>
                         <th className="border border-gray-300 px-4 py-2">#</th>
                         <th className="border border-gray-300 px-4 py-2">Organization Name</th>
-                        <th className="border border-gray-300 px-4 py-2">Actions</th>
+                        {/* <th className="border border-gray-300 px-4 py-2">Actions</th> */}
                     </tr>
                 </thead>
                 <tbody>
@@ -21,11 +21,11 @@ const OrganizationTable = ({ organizations }) => {
                                 <td className="border border-gray-300 px-4 py-2">
                                     {org.name}
                                 </td>
-                                <td className="border border-gray-300 px-4 py-2 text-center">
+                                {/* <td className="border border-gray-300 px-4 py-2 text-center">
                                     <button className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-700">
                                         Delete
                                     </button>
-                                </td>
+                                </td> */}
                             </tr>
                         ))
                     ) : (

@@ -4,7 +4,7 @@ const UserViewTemplatePage = () => {
     console.log(1)
   return (
     <>
-        <div>UserViewTemplatePage</div>
+        {/* <div>UserViewTemplatePage</div> */}
         <ViewTemplateContainer />
     </>
   )

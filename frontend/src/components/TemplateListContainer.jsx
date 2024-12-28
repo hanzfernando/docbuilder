@@ -41,7 +41,7 @@ const TemplateListContainer = () => {
                     {templates.map((template) => (
                         <div
                             key={template._id}
-                            className="border rounded p-4 shadow hover:shadow-lg transition-shadow duration-300"
+                            className="border rounded p-4 shadow hover:shadow-lg transition-shadow duration-300 bg-white"
                         >
                             <h3 className="text-xl font-semibold mb-2">{template.name}</h3>
                             <p className="text-gray-700 mb-1">

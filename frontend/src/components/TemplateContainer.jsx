@@ -342,11 +342,58 @@ const TemplateContainer = () => {
                                     ],
                                     toolbar:
                                         'undo redo | styles | bold italic underline | fontsize fontfamily | lineheight pagebreak| ' +
-                                        'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | ' +
+                                        'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | addHangingIndent removeHangingIndent | ' +
                                         'link image | fullscreen | forecolor backcolor emoticons | help',
                                     fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',
                                     line_height_formats: '1 1.1 1.15 1.2 1.3 1.5 2',
                                     content_style: sharedStyles,
+                                    setup: (editor) => {
+                                        // Add Hanging Indent Button
+                                        editor.ui.registry.addButton('addHangingIndent', {
+                                            text: 'Hanging Indent',
+                                            icon: 'indent',
+                                            tooltip: 'Add Hanging Indent',
+                                            onAction: () => {
+                                                const selectedNode = editor.selection.getNode(); // Get the selected node
+                                                const isParagraph = selectedNode.nodeName === 'P'; // Check if it's a <p> element
+                                    
+                                                if (isParagraph) {
+                                                    // Update the style directly for <p> elements
+                                                    selectedNode.style.textIndent = '-40px';
+                                                    selectedNode.style.marginLeft = '40px';
+                                                } else {
+                                                    // Wrap in a <p> if not already a block element
+                                                    const content = editor.selection.getContent({ format: 'html' });
+                                                    editor.selection.setContent(
+                                                        `<p style="text-indent: -40px; margin-left: 40px;">${content}</p>`
+                                                    );
+                                                }
+                                            },
+                                        });
+                                    
+                                        // Remove Hanging Indent Button
+                                        editor.ui.registry.addButton('removeHangingIndent', {
+                                            text: 'Remove Hanging Indent',
+                                            icon: 'outdent',
+                                            tooltip: 'Remove Hanging Indent',
+                                            onAction: () => {
+                                                const selectedNode = editor.selection.getNode(); // Get the selected node
+                                                const isParagraph = selectedNode.nodeName === 'P'; // Check if it's a <p> element
+                                    
+                                                if (isParagraph) {
+                                                    // Remove the hanging indent styles
+                                                    selectedNode.style.textIndent = '';
+                                                    selectedNode.style.marginLeft = '';
+                                                } else {
+                                                    // Handle nested <p> tags (if any)
+                                                    const content = editor.selection.getContent({ format: 'html' });
+                                                    editor.selection.setContent(
+                                                        content.replace(/<p[^>]*style=["'][^"']*text-indent:\s*-40px;?\s*margin-left:\s*40px;?[^"']*["'][^>]*>(.*?)<\/p>/g, '$1')
+                                                    );
+                                                }
+                                            },
+                                        });
+                                    },                                                                      
                                 }}
                                 onEditorChange={(content, editor) => handleEditorChange(content, editor, page.id)}
                             />
