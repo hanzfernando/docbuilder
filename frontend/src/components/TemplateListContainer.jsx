@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useTemplateContext } from '../hooks/useTemplateContext';
-import { fetchTemplates } from '../services/templateService';
+import { fetchTemplates, deleteTemplate } from '../services/templateService';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../utils/authUtil';
 import { useAuthContext } from '../hooks/useAuthContext'; // Assuming you have this hook to get user info
@@ -9,6 +9,7 @@ const TemplateListContainer = () => {
     const { templates, loading, error, dispatch } = useTemplateContext();
     const { user } = useAuthContext(); // Get user from auth context
     const navigate = useNavigate();
+    // console.log('User:', user);
 
     useEffect(() => {
         const loadTemplates = async () => {
@@ -27,6 +28,18 @@ const TemplateListContainer = () => {
 
         loadTemplates();
     }, [dispatch]);
+
+    const handleDeleteTemplate = async (templateId) => {
+        try {
+            const token = getToken();
+            await deleteTemplate(templateId, token); // Call delete service
+            dispatch({ type: 'DELETE_TEMPLATE', payload: templateId }); // Dispatch reducer action
+            alert('Template deleted successfully');
+        } catch (err) {
+            console.error('Failed to delete template:', err.message);
+            alert(err.message || 'Failed to delete template. Please try again.');
+        }
+    };
 
     if (loading) return <p>Loading templates...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
@@ -53,18 +66,28 @@ const TemplateListContainer = () => {
                             <p className="text-gray-700">
                                 <strong>Role:</strong> {template.requiredRole}
                             </p>
-                            <button
-                                className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
-                                onClick={() =>
-                                    navigate(
-                                        user.role === 'admin'
-                                            ? `/templates/${template._id}`
-                                            : `/user-templates/${template._id}`
-                                    )
-                                }
-                            >
-                                View Template
-                            </button>
+                            <div className="mt-4 flex justify-between">
+                                <button
+                                    className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+                                    onClick={() =>
+                                        navigate(
+                                            user.role === 'admin'
+                                                ? `/templates/${template._id}`
+                                                : `/user-templates/${template._id}`
+                                        )
+                                    }
+                                >
+                                    View
+                                </button>
+                                {user.role === 'admin' && (
+                                    <button
+                                        className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700"
+                                        onClick={() => handleDeleteTemplate(template._id)}
+                                    >
+                                        Delete
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

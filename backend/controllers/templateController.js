@@ -127,9 +127,9 @@ const updateTemplate = async (req, res) => {
 const deleteTemplate = async (req, res) => {
     try {
         const { id } = req.params;
-        const { organization } = req.user;
+        //const { organization } = req.user;
 
-        const template = await Template.findOneAndDelete({ _id: id, organization });
+        const template = await Template.findOneAndDelete({ _id: id });
 
         if (!template) {
             return res.status(404).json({ message: 'Template not found or access denied' });

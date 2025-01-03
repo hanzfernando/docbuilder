@@ -62,89 +62,133 @@ const getUserDetails = async (req, res) => {
     }
 };
 
-// Create a new template
-const createTemplate = async (req, res) => {
+const changePassword = async (req, res) => {
     try {
-        const { name, content, type, subtype, requiredRole, organization } = req.body;
-
-        if (!name || !content || !type || !requiredRole || !organization) {
-            return res.status(400).json({ message: 'All required fields must be provided.' });
+        const { currentPassword, newPassword } = req.body;
+        console.log(req.body);
+        console.log(req.user);
+        // Validate input
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: 'Current and new passwords are required' });
         }
 
-        const newTemplate = new Template({
-            name,
-            content,
-            type,
-            subtype,
-            requiredRole,
-            organization,
-        });
-
-        const savedTemplate = await newTemplate.save();
-        res.status(201).json(savedTemplate);
-    } catch (error) {
-        res.status(500).json({ message: 'Error creating template', error: error.message });
-    }
-};
-
-// Get all templates
-const getTemplates = async (req, res) => {
-    try {
-        const templates = await Template.find().populate('organization', 'name'); // Populate organization details if needed
-        res.status(200).json(templates);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching templates', error: error.message });
-    }
-};
-
-// Get a template by ID
-const getTemplateById = async (req, res) => {
-    try {
-        const template = await Template.findById(req.params.id).populate('organization', 'name');
-        if (!template) {
-            return res.status(404).json({ message: 'Template not found' });
-        }
-        res.status(200).json(template);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching template', error: error.message });
-    }
-};
-
-// Update a template
-const updateTemplate = async (req, res) => {
-    try {
-        const { name, content, type, subtype, requiredRole, organization } = req.body;
-
-        const updatedTemplate = await Template.findByIdAndUpdate(
-            req.params.id,
-            { name, content, type, subtype, requiredRole, organization },
-            { new: true } // Return the updated document
-        );
-
-        if (!updatedTemplate) {
-            return res.status(404).json({ message: 'Template not found' });
+        // Find the user by ID
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
         }
 
-        res.status(200).json(updatedTemplate);
-    } catch (error) {
-        res.status(500).json({ message: 'Error updating template', error: error.message });
-    }
-};
-
-// Delete a template
-const deleteTemplate = async (req, res) => {
-    try {
-        const deletedTemplate = await Template.findByIdAndDelete(req.params.id);
-
-        if (!deletedTemplate) {
-            return res.status(404).json({ message: 'Template not found' });
+        // Verify current password
+        const isMatch = await user.matchPassword(currentPassword);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Current password is incorrect' });
         }
 
-        res.status(200).json({ message: 'Template deleted successfully' });
+        // Update to the new password
+        user.password = newPassword; // Ensure password hashing is done in your model's pre-save middleware
+        await user.save();
+
+        res.status(200).json({ message: 'Password updated successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting template', error: error.message });
+        console.error('Error changing password:', error.message);
+        res.status(500).json({ message: 'Error changing password', error: error.message });
     }
 };
 
-export { loginUser, getUserDetails, createTemplate, getTemplates, getTemplateById, updateTemplate, deleteTemplate };
+// Reset Password Controller
+const resetPassword = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
+
+        if (!email || !newPassword) {
+            return res.status(400).json({ message: 'Email and new password are required' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        user.password = newPassword; // Password will be hashed in the pre-save middleware
+        await user.save();
+
+        res.status(200).json({ message: 'Password reset successfully' });
+    } catch (error) {
+        console.error('Error resetting password:', error.message);
+        res.status(500).json({ message: 'Failed to reset password', error: error.message });
+    }
+};
+
+// // Create a new template
+// const createTemplate = async (req, res) => {
+//     try {
+//         const { name, content, type, subtype, requiredRole, organization } = req.body;
+
+//         if (!name || !content || !type || !requiredRole || !organization) {
+//             return res.status(400).json({ message: 'All required fields must be provided.' });
+//         }
+
+//         const newTemplate = new Template({
+//             name,
+//             content,
+//             type,
+//             subtype,
+//             requiredRole,
+//             organization,
+//         });
+
+//         const savedTemplate = await newTemplate.save();
+//         res.status(201).json(savedTemplate);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error creating template', error: error.message });
+//     }
+// };
+
+// // Get all templates
+// const getTemplates = async (req, res) => {
+//     try {
+//         const templates = await Template.find().populate('organization', 'name'); // Populate organization details if needed
+//         res.status(200).json(templates);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error fetching templates', error: error.message });
+//     }
+// };
+
+// // Get a template by ID
+// const getTemplateById = async (req, res) => {
+//     try {
+//         const template = await Template.findById(req.params.id).populate('organization', 'name');
+//         if (!template) {
+//             return res.status(404).json({ message: 'Template not found' });
+//         }
+//         res.status(200).json(template);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error fetching template', error: error.message });
+//     }
+// };
+
+// // Update a template
+// const updateTemplate = async (req, res) => {
+//     try {
+//         const { name, content, type, subtype, requiredRole, organization } = req.body;
+
+//         const updatedTemplate = await Template.findByIdAndUpdate(
+//             req.params.id,
+//             { name, content, type, subtype, requiredRole, organization },
+//             { new: true } // Return the updated document
+//         );
+
+//         if (!updatedTemplate) {
+//             return res.status(404).json({ message: 'Template not found' });
+//         }
+
+//         res.status(200).json(updatedTemplate);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Error updating template', error: error.message });
+//     }
+// };
+
+
+
+export { loginUser, getUserDetails, changePassword, resetPassword };
 

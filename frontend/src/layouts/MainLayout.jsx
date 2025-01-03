@@ -5,7 +5,7 @@ const MainLayout = () => {
     return (
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar */}
-            <div className="w-1/5 bg-white shadow-md p-4">
+            <div className="w-1/5 bg-white shadow-md p-4 max-w-256">
                 <SideNavigationBar />
             </div>
 

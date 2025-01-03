@@ -1,5 +1,6 @@
 import TemplateListContainer from "../components/TemplateListContainer"
 const UserTemplatesPage = () => {
+    
   return (
     <>
         {/* <div>UserTemplatesPage</div> */}

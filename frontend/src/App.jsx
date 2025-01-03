@@ -23,12 +23,13 @@ import UserTemplatesPage from './pages/UserTemplatesPage.jsx';
 import UserViewTemplatePage from './pages/UserViewTemplatePage.jsx';
 import UserDocumentsPage from './pages/UserDocumentsPage.jsx';
 import UserDocumentCreationPage from './pages/UserDocumentCreationPage.jsx';
-
+import ChangePasswordPage from './pages/ChangePasswordPage.jsx';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, requiredRoles }) => {
     const { user } = useAuthContext();
-    console.log(user);
+    // console.log(user.role);
+    // console.log(requiredRoles);
 
     if (!user) {
         return <Navigate to="/login" replace />;
@@ -92,6 +93,16 @@ const App = () => {
                     <Route path="/documents" element={<UserDocumentsPage />} />
                     <Route path="/documents/:id" element={<UserDocumentCreationPage />} />
                     <Route path="/document-creation/:templateId" element={<UserDocumentCreationPage />} />
+                </Route>
+
+                <Route
+                    element={
+                        <ProtectedRoute requiredRoles={['superadmin', 'admin', 'organization', 'student']}>
+                            <MainLayout />
+                        </ProtectedRoute>
+                    }
+                >
+                    <Route path="/change-password" element={<ChangePasswordPage />} />
                 </Route>
             </>
         )

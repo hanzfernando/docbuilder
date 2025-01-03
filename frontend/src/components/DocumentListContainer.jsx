@@ -1,21 +1,25 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../hooks/useAuthContext';
-import { getDocumentsByUser } from '../services/documentService';
-import { useDocumentContext } from '../hooks/useDocumentContext'; // Create this hook if not already available
+import { getDocumentsByUser, deleteDocument } from '../services/documentService';
+import { useDocumentContext } from '../hooks/useDocumentContext';
 import { getToken } from '../utils/authUtil';
+import DeleteDocumentModal from './DeleteDocumentModal'; // Import the modal
 
 const DocumentListContainer = () => {
     const { documents, loading, error, dispatch } = useDocumentContext();
     const { user } = useAuthContext();
     const navigate = useNavigate();
+    const [selectedDocument, setSelectedDocument] = useState(null); // Track the selected document for deletion
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
+    console.log(documents);
     useEffect(() => {
         const loadDocuments = async () => {
             dispatch({ type: 'SET_LOADING', payload: true });
             try {
                 const token = getToken();
-                const fetchedDocuments = await getDocumentsByUser(user._id, token); // Replace with your actual API call
+                const fetchedDocuments = await getDocumentsByUser(user._id, token);
                 dispatch({ type: 'SET_DOCUMENTS', payload: fetchedDocuments });
             } catch (err) {
                 console.error(err);
@@ -27,6 +31,24 @@ const DocumentListContainer = () => {
 
         loadDocuments();
     }, [dispatch, user]);
+
+    const handleDeleteDocument = async (documentId) => {
+        try {
+            console.log('Deleting document:', documentId);
+            const token = getToken();
+            await deleteDocument(documentId, token);
+            dispatch({ type: 'DELETE_DOCUMENT', payload: documentId });
+            alert('Document deleted successfully!');
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete the document. Please try again.');
+        }
+    };
+
+    const openDeleteModal = (document) => {
+        setSelectedDocument(document);
+        setIsModalOpen(true);
+    };
 
     if (loading) return <p>Loading documents...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
@@ -45,22 +67,33 @@ const DocumentListContainer = () => {
                         >
                             <h3 className="text-xl font-semibold mb-2">{document.title}</h3>
                             <p className="text-gray-700 mb-1">
-                                <strong>Template:</strong> {document.template.name || 'N/A'}
+                                <strong>Template:</strong> {document.template?.name || 'N/A'}
                             </p>
-                            {/* <p className="text-gray-700">
-                                <strong>Created By:</strong> {user.name}
-                            </p> */}
                             <div className="mt-4 flex gap-2">
                                 <button
                                     className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
-                                    onClick={() => navigate(`/documents/${document._id}`)} // Navigate to view/edit document
+                                    onClick={() => navigate(`/documents/${document._id}`)}
                                 >
                                     Open
-                                </button>                        
+                                </button>
+                                <button
+                                    className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700"
+                                    onClick={() => openDeleteModal(document)}
+                                >
+                                    Delete
+                                </button>
                             </div>
                         </div>
                     ))}
                 </div>
+            )}
+            {isModalOpen && selectedDocument && (
+                <DeleteDocumentModal
+                    isOpen={isModalOpen}
+                    documentTitle={selectedDocument.title}
+                    onClose={() => setIsModalOpen(false)}
+                    onDelete={() => handleDeleteDocument(selectedDocument._id)}
+                />
             )}
         </div>
     );

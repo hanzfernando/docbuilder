@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import UserTable from '../components/UserTable';
 import AddAdminModal from '../components/AddAdminModal';
-import { fetchAdminAccounts, addAdminAccount } from '../services/superAdminService';
+import { fetchAdminAccounts, addAdminAccount, editAdminAccount, deleteAdminAccount } from '../services/superAdminService';
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useUserContext } from '../hooks/useUserContext';
 
@@ -12,6 +12,7 @@ const SuperAdminAdminsPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddAdminModalOpen, setIsAddAdminModalOpen] = useState(false);
 
+    console.log('Users:', users);
     // Fetch users and populate context only if not already loaded
     useEffect(() => {
         if (users.length === 0) {
@@ -47,10 +48,37 @@ const SuperAdminAdminsPage = () => {
     const handleAddAdmin = async (userDetails) => {
         try {
             const newUser = await addAdminAccount(token, userDetails);
+            console.log('New user:', newUser);
             dispatch({ type: 'ADD_USER', payload: newUser.user });
             setIsAddAdminModalOpen(false);
         } catch (error) {
             console.error('Failed to add user:', error);
+        }
+    };
+
+    const handleEditAdmin = async (userId, updatedData) => {
+        try {
+            await editAdminAccount(token, userId, updatedData);
+            dispatch({
+                type: 'SET_USERS',
+                payload: users.map((user) =>
+                    user._id === userId ? { ...user, ...updatedData } : user
+                ),
+            });
+        } catch (error) {
+            console.error('Failed to update user:', error);
+        }
+    };
+    
+    const handleDeleteAdmin = async (userId) => {
+        try {
+            await deleteAdminAccount(token, userId);
+            dispatch({
+                type: 'SET_USERS',
+                payload: users.filter((user) => user._id !== userId),
+            });            
+        } catch (error) {
+            console.error('Failed to delete user:', error);
         }
     };
 
@@ -76,7 +104,11 @@ const SuperAdminAdminsPage = () => {
             </div>
 
             {/* User Table */}
-            <UserTable users={filteredUsers} />
+            <UserTable
+                users={filteredUsers}
+                onEdit={handleEditAdmin}
+                onDelete={handleDeleteAdmin}
+            />;
 
             {/* Add User Modal */}
             <AddAdminModal

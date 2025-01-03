@@ -30,6 +30,26 @@ const DocumentContainer = () => {
             margin: 0;
             padding: 0;
         }
+
+        .non-editable {
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .non-editable .editable {
+            pointer-events: auto;
+            user-select: auto;
+            background-color: #fffbe6;
+            border: 1px dashed #ffa000;
+            padding: 2px;
+        }
+
+        .non-editable .editable:hover {
+            border-color: #ff6f00;
+            background-color: #fff3e0;
+        }
+
+
         .page, .mce-content-body {
             width: ${selectedPageSize.width}px;
             min-height: ${selectedPageSize.height - 100}px;
@@ -60,6 +80,11 @@ const DocumentContainer = () => {
                 width: ${selectedPageSize.width}px;
                 min-height: ${selectedPageSize.height}px;
                 pagebreak-after: always;
+            }
+
+            .non-editable, .non-editable .editable {
+                background-color: transparent;
+                border: none;
             }
         }
     `;
@@ -280,7 +305,53 @@ const DocumentContainer = () => {
                                     'alignleft aligncenter alignright alignjustify | ' +
                                     'bullist numlist outdent indent | addHangingIndent removeHangingIndent | removeformat | help',
                                 content_style: sharedStyles,
+                                readonly: 1,
+                                browser_spellcheck: true,
                                 setup: (editor) => {
+                                    // Prevent interaction outside of editable spans within non-editable blocks
+                                    editor.on('BeforeExecCommand', (e) => {
+                                        const selectedNode = editor.selection.getNode();
+                                        if (selectedNode.closest('.non-editable') && !selectedNode.classList.contains('editable')) {
+                                            e.preventDefault(); // Block commands like typing or formatting
+                                        }
+                                    });
+
+                                    // Prevent cursor placement or interaction outside of editable spans
+                                    editor.on('MouseDown', (e) => {
+                                        const targetNode = e.target;
+                                        if (targetNode.closest('.non-editable') && !targetNode.classList.contains('editable')) {
+                                            e.preventDefault(); // Prevent clicking into non-editable areas
+                                            editor.selection.collapse(); // Remove selection
+                                        }
+                                    });
+
+                                    // Ensure `editable` spans remain editable
+                                    editor.on('BeforeSetContent', (e) => {
+                                        const parser = new DOMParser();
+                                        const doc = parser.parseFromString(e.content, 'text/html');
+                                        const nonEditableElements = doc.querySelectorAll('.non-editable');
+                                        nonEditableElements.forEach((el) => {
+                                            // Set non-editable container to not allow interaction
+                                            el.setAttribute('contenteditable', 'false');
+
+                                            // Ensure editable spans inside remain editable
+                                            el.querySelectorAll('.editable').forEach((span) => {
+                                                span.setAttribute('contenteditable', 'true');
+                                            });
+                                        });
+                                        e.content = doc.body.innerHTML;
+                                    });
+
+                                    // Adjust toolbar interaction based on selection
+                                    editor.on('NodeChange', () => {
+                                        const selectedNode = editor.selection.getNode();
+                                        const inNonEditable = selectedNode.closest('.non-editable') && !selectedNode.classList.contains('editable');
+                                        const toolbarButtons = editor.getContainer().querySelectorAll('.tox-tbtn');
+
+                                        toolbarButtons.forEach((btn) => {
+                                            btn.disabled = inNonEditable; // Disable buttons if in a non-editable area
+                                        });
+                                    });
                                     // Add Hanging Indent Button
                                     editor.ui.registry.addButton('addHangingIndent', {
                                         text: 'Hanging Indent',

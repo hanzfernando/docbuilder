@@ -39,9 +39,9 @@ const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     // Log state changes
-    useEffect(() => {
-        console.log('AuthContext updated:', state);
-    }, [state]);
+    // useEffect(() => {
+    //     console.log('AuthContext updated:', state);
+    // }, [state]);
 
     // Initialize user details if token exists
     useEffect(() => {

@@ -3,6 +3,9 @@ import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
 import FilteredTemplateListContainer from './FilteredTemplateListContainer';
 import { useTemplateContext } from '../hooks/useTemplateContext';
+import { fetchDecisionTree } from '../services/templateService';
+import { getToken } from '../utils/authUtil';
+
 
 const AddDocumentModal = ({ onClose }) => {
     const { templates, dispatch, loading: contextLoading, error: contextError } = useTemplateContext();
@@ -16,28 +19,30 @@ const AddDocumentModal = ({ onClose }) => {
         if (templates.length === 0) {
             dispatch({ type: 'SET_LOADING', payload: true });
         } else {
-            const buildDecisionTree = () => {
-                const tree = {};
+            const buildDecisionTree = async() => {
+                // const tree = {};
+                const token = getToken();
+                const tree = await fetchDecisionTree(token);
 
-                templates.forEach((template) => {
-                    const { type, subtype, name, _id } = template;
+                // templates.forEach((template) => {
+                //     const { type, subtype, name, _id } = template;
 
-                    if (!tree[type]) {
-                        tree[type] = { subtype: {} };
-                    }
+                //     if (!tree[type]) {
+                //         tree[type] = { subtype: {} };
+                //     }
 
-                    if (subtype) {
-                        if (!tree[type].subtype[subtype]) {
-                            tree[type].subtype[subtype] = [];
-                        }
-                        tree[type].subtype[subtype].push({ name, id: _id });
-                    } else {
-                        if (!tree[type].names) {
-                            tree[type].names = [];
-                        }
-                        tree[type].names.push({ name, id: _id });
-                    }
-                });
+                //     if (subtype) {
+                //         if (!tree[type].subtype[subtype]) {
+                //             tree[type].subtype[subtype] = [];
+                //         }
+                //         tree[type].subtype[subtype].push({ name, id: _id });
+                //     } else {
+                //         if (!tree[type].names) {
+                //             tree[type].names = [];
+                //         }
+                //         tree[type].names.push({ name, id: _id });
+                //     }
+                // });
 
                 setDecisionTree(tree);
             };
@@ -45,6 +50,8 @@ const AddDocumentModal = ({ onClose }) => {
             buildDecisionTree();
         }
     }, [templates, dispatch]);
+    // console.log(decisionTree);
+    
 
     const handleUseTemplate = () => {
         if (selectedTemplate) {

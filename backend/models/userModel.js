@@ -34,7 +34,7 @@ const userSchema = new mongoose.Schema(
         role: { 
             type: String, 
             enum: ["superadmin", "admin", "organization", "student"], 
-            default: "user" 
+            default: "admin" 
         }
     }, 
     {
@@ -49,11 +49,17 @@ userSchema.pre('save', async function (next) {
             const salt = await bcrypt.genSalt(12)
             this.password = await bcrypt.hash(this.password, salt)
         }
+        next();
     } catch (error) {
         next(error)
         
     }
 })
+
+// Method to compare passwords
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
 
 
 userSchema.statics.signup = async function (firstname, lastname, email, password, role = "student", organization = null) {

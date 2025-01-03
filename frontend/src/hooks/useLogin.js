@@ -19,8 +19,8 @@ const useLogin = () => {
             // Save token locally
             setToken(token);
 
-            console.log('User:', user);
-            console.log('Token:', token);
+            // console.log('User:', user);
+            // console.log('Token:', token);
             // Dispatch user info and token to auth context
             dispatch({
                 type: 'LOGIN',

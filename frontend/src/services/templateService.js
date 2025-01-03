@@ -87,4 +87,18 @@ const fetchDecisionTree = async (token) => {
     }
 };
 
-export { createTemplate, fetchTemplates, getTemplateById, updateTemplate, fetchDecisionTree, getTemplateHeaderById };
+const deleteTemplate = async (id, token) => {
+    try {
+        const response = await axios.delete(`${API_URL}/${id}`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error deleting template:', error.response?.data || error.message);
+        throw error.response?.data || error;
+    }
+};
+
+export { createTemplate, fetchTemplates, getTemplateById, updateTemplate, fetchDecisionTree, getTemplateHeaderById, deleteTemplate };

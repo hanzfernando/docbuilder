@@ -13,6 +13,7 @@ const TemplateContainer = () => {
     const [documentSubtype, setDocumentSubtype] = useState('');
     const [requiredRole, setRequiredRole] = useState('student');
     const [paperSize, setPaperSize] = useState('letter');
+    const [strictMode, setStrictMode] = useState(false); // Strict mode toggle
     const [editorLoaded, setEditorLoaded] = useState(false);
     const [isUpdateMode, setIsUpdateMode] = useState(false);
     const navigate = useNavigate();
@@ -31,6 +32,21 @@ const TemplateContainer = () => {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+        }
+
+        .non-editable {
+            
+        }
+
+        .editable {
+            background-color: #fffbe6;
+            border: 1px dashed #ffa000;
+            padding: 2px;
+        }
+
+        .editable:hover {
+            border-color: #ff6f00;
+            background-color: #fff3e0;
         }
 
         .page, .mce-content-body {
@@ -99,10 +115,20 @@ const TemplateContainer = () => {
     }, [id]);
 
     const handleEditorChange = (content, editor, pageId) => {
+        const updatedContent = strictMode
+            ? content.includes('class="non-editable"')
+                ? content // Avoid re-wrapping if already wrapped
+                : `<div class="non-editable">${content}</div>`
+            : content;
+
         setPages((prevPages) =>
-            prevPages.map((page) => (page.id === pageId ? { ...page, content } : page))
+            prevPages.map((page) =>
+                page.id === pageId ? { ...page, content: updatedContent } : page
+            )
         );
     };
+
+    const toggleStrictMode = () => setStrictMode(!strictMode);
 
     const handleAddPage = () => {
         setPages((prevPages) => [
@@ -222,17 +248,19 @@ const TemplateContainer = () => {
 
     return (
         <div className="p-4">
-            <h1 className="text-2xl font-bold mb-4">Document Editor</h1>
+            <h1 className="text-2xl font-bold mb-4">Template Editor</h1>
             {/* Document Details */}
             <div className="mb-4 border p-4 rounded shadow">
                 <h2 className="text-xl font-medium mb-4">Template Information</h2>
-                <label className="block text-gray-700 font-medium mb-2">Document Name:</label>
+                <label className="block text-gray-700 font-medium mb-2">Template Name:</label>
                 <input
                     type="text"
                     value={documentName}
                     onChange={(e) => setDocumentName(e.target.value)}
                     placeholder="Enter document name"
                     className="w-full border rounded p-2 mb-4"
+                    required
+                    disabled={editorLoaded} // Lock field once template creation begins
                 />
                 <label className="block text-gray-700 font-medium mb-2">Document Type:</label>
                 <input
@@ -241,6 +269,8 @@ const TemplateContainer = () => {
                     onChange={(e) => setDocumentType(e.target.value)}
                     placeholder="Enter document type (e.g., Proposal, Report)"
                     className="w-full border rounded p-2 mb-4"
+                    required
+                    disabled={editorLoaded} // Lock field once template creation begins
                 />
                 <label className="block text-gray-700 font-medium mb-2">Document Subtype:</label>
                 <input
@@ -249,23 +279,36 @@ const TemplateContainer = () => {
                     onChange={(e) => setDocumentSubtype(e.target.value)}
                     placeholder="Enter document subtype (optional)"
                     className="w-full border rounded p-2 mb-4"
+                    disabled={editorLoaded} // Lock field once template creation begins
                 />
                 <label className="block text-gray-700 font-medium mb-2">Template For:</label>
                 <select
                     value={requiredRole}
                     onChange={(e) => setRequiredRole(e.target.value)}
                     className="border rounded p-2 mb-4"
+                    required
+                    disabled={editorLoaded} // Lock field once template creation begins
                 >
                     <option value="">Select Role</option>
                     <option value="student">Student</option>
                     <option value="organization">Organization</option>
                 </select>
+                <label className="block text-gray-700 font-medium mb-2">Strict Mode:</label>
+                <input
+                    type="checkbox"
+                    checked={strictMode}
+                    onChange={toggleStrictMode}
+                    className="mr-2"
+                    disabled={editorLoaded} // Lock toggle once template creation begins
+                />
+                Enable strict mode
                 <label className="block text-gray-700 font-medium mb-2">Paper Size:</label>
                 <select
                     value={paperSize}
                     onChange={(e) => setPaperSize(e.target.value)}
-                    disabled={isUpdateMode} // Lock paper size in update mode
+                    disabled={editorLoaded} // Lock field once template creation begins
                     className="border rounded p-2 mb-4"
+                    required
                 >
                     <option value="letter">Letter (8.5in x 11in)</option>
                     <option value="legal">Legal (8.5in x 14in)</option>
@@ -273,15 +316,23 @@ const TemplateContainer = () => {
                 </select>
 
                 <button
-                    onClick={() => setEditorLoaded(true)}
-                    disabled={editorLoaded || isUpdateMode}
+                    onClick={() => {
+                        // Validate all required fields before starting template creation
+                        if (!documentName || !documentType || !requiredRole || !paperSize) {
+                            alert('Please fill in all required fields before starting template creation.');
+                            return;
+                        }
+                        setEditorLoaded(true); // Allow template creation to begin
+                    }}
+                    disabled={editorLoaded} // Prevent multiple clicks
                     className={`bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700 ${
-                        isUpdateMode ? 'hidden' : ''
+                        editorLoaded ? 'hidden' : ''
                     }`}
                 >
-                    {isUpdateMode ? 'Editor Loaded' : 'Begin Template Creation'}
+                    Begin Template Creation
                 </button>
             </div>
+
 
             {editorLoaded && (
                 <>
@@ -341,13 +392,28 @@ const TemplateContainer = () => {
                                         'media', 'table', 'emoticons', 'help', 'print',
                                     ],
                                     toolbar:
-                                        'undo redo | styles | bold italic underline | fontsize fontfamily | lineheight pagebreak| ' +
+                                        'undo redo | styles | bold italic underline | fontsize fontfamily | markEditable removeEditable | lineheight pagebreak| ' +
                                         'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | addHangingIndent removeHangingIndent | ' +
                                         'link image | fullscreen | forecolor backcolor emoticons | help',
                                     fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',
                                     line_height_formats: '1 1.1 1.15 1.2 1.3 1.5 2',
                                     content_style: sharedStyles,
                                     setup: (editor) => {
+                                        editor.ui.registry.addButton('markEditable', {
+                                            text: 'Mark Editable',
+                                            onAction: () => {
+                                                const content = editor.selection.getContent();
+                                                editor.selection.setContent(`<span class="editable">${content}</span>`);
+                                            },
+                                        });
+            
+                                        editor.ui.registry.addButton('removeEditable', {
+                                            text: 'Remove Editable',
+                                            onAction: () => {
+                                                const content = editor.selection.getContent();
+                                                editor.selection.setContent(content.replace(/<span class="editable">(.*?)<\/span>/g, '$1'));
+                                            },
+                                        });
                                         // Add Hanging Indent Button
                                         editor.ui.registry.addButton('addHangingIndent', {
                                             text: 'Hanging Indent',

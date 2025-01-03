@@ -2,7 +2,7 @@ import { createContext, useReducer, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { fetchTemplates } from '../services/templateService';
 import { getToken } from '../utils/authUtil';
-
+import { useAuthContext } from '../hooks/useAuthContext';
 // Initial state for templates
 const initialState = {
     templates: [],
@@ -55,22 +55,26 @@ const TemplateContext = createContext();
 // Context provider
 const TemplateProvider = ({ children }) => {
     const [state, dispatch] = useReducer(templateReducer, initialState);
+    const { user } = useAuthContext();
 
     useEffect(() => {
-        const loadTemplates = async () => {
-            dispatch({ type: 'SET_LOADING', payload: true });
+        const loadTemplatesIfNeeded = async () => {
+            // Check if user is logged in and templates array is empty
+            if (user && user.role != "superadmin" && state.templates.length === 0) {
+                dispatch({ type: 'SET_LOADING', payload: true });
 
-            try {
-                const token = getToken(); // Get the token from your auth utility
-                const templates = await fetchTemplates(token);
-                dispatch({ type: 'SET_TEMPLATES', payload: templates });
-            } catch (error) {
-                dispatch({ type: 'SET_ERROR', payload: error.message });
+                try {
+                    const token = getToken(); // Get the token from your auth utility
+                    const templates = await fetchTemplates(token);
+                    dispatch({ type: 'SET_TEMPLATES', payload: templates });
+                } catch (error) {
+                    dispatch({ type: 'SET_ERROR', payload: error.message });
+                }
             }
         };
 
-        loadTemplates();
-    }, []); // Fetch templates once on mount
+        loadTemplatesIfNeeded();
+    }, [state.templates, user]); // Fetch templates only if templates array is empty
 
     return (
         <TemplateContext.Provider value={{ ...state, dispatch }}>

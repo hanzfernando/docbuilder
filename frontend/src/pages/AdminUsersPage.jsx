@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import UserTable from '../components/UserTable';
 import AddUserModal from '../components/AddUserModal';
-import { fetchUserAccounts, addUserAccount } from '../services/adminService'; // Use the service for users
+import { fetchUserAccounts, addUserAccount, editUserAccount, deleteUserAccount } from '../services/adminService'; // Use the service for users
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useUserContext } from '../hooks/useUserContext';
 
@@ -66,6 +66,32 @@ const AdminUsersPage = () => {
             console.error('Failed to add user:', error);
         }
     };
+
+    const handleEditUser = async (userId, updatedData) => {
+            try {
+                await editUserAccount(token, userId, updatedData);
+                dispatch({
+                    type: 'SET_USERS',
+                    payload: users.map((user) =>
+                        user._id === userId ? { ...user, ...updatedData } : user
+                    ),
+                });
+            } catch (error) {
+                console.error('Failed to update user:', error);
+            }
+        };
+        
+    const handleDeleteUser = async (userId) => {
+        try {
+            await deleteUserAccount(token, userId);
+            dispatch({
+                type: 'SET_USERS',
+                payload: users.filter((user) => user._id !== userId),
+            });            
+        } catch (error) {
+            console.error('Failed to delete user:', error);
+        }
+    };
     
 
     return (
@@ -90,7 +116,11 @@ const AdminUsersPage = () => {
             </div>
 
             {/* User Table */}
-            <UserTable users={filteredUsers} />
+            <UserTable
+                users={filteredUsers}
+                onEdit={handleEditUser}
+                onDelete={handleDeleteUser}
+            />;
 
             {/* Add User Modal */}
             <AddUserModal

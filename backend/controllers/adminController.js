@@ -84,7 +84,7 @@ const getUsers = async (req, res) => {
 
         // Fetch users from the database
         const users = await User.find(filter)
-            .populate('organization', 'name') // Populate the organization name
+            .populate('organization', '_id name') // Populate the organization name
             .select('-password') // Exclude password field
             .sort({ createdAt: -1 }); // Sort by creation date descending
 
@@ -99,4 +99,60 @@ const getUsers = async (req, res) => {
     }
 };
 
-export { createUserAccount, getUsers };
+// Edit User Account
+const editUserAccount = async (req, res) => {
+    const { id } = req.params; // User account ID
+    const { firstname, lastname, email, password, organization, role } = req.body;
+
+    try {
+        if (!id) throw new Error('User account ID is required');
+        if (!firstname && !lastname && !email && !password && !organization && !role) {
+            throw new Error('At least one field is required to update');
+        }
+
+        const updateData = {};
+
+        if (firstname) updateData.firstname = firstname;
+        if (lastname) updateData.lastname = lastname;
+        if (email) updateData.email = email;
+        if (password) updateData.password = await User.hashPassword(password); // Hash new password
+        if (organization) updateData.organization = organization;
+        if (role) updateData.role = role;
+
+        const updatedUser = await User.findByIdAndUpdate(
+            id,
+            { $set: updateData },
+            { new: true, runValidators: true }
+        ).populate('organization', 'name');
+
+        if (!updatedUser) throw new Error('User account not found');
+
+        res.status(200).json({ message: 'User account updated successfully', user: updatedUser });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// Delete User Account
+const deleteUserAccount = async (req, res) => {
+    const { id } = req.params; // User account ID
+
+    try {
+        if (!id) throw new Error('User account ID is required');
+
+        // Find and delete the user in the User table
+        const deletedUser = await User.findByIdAndDelete(id);
+
+        if (!deletedUser) throw new Error('User account not found');
+
+        res.status(200).json({
+            message: 'User account and associated record deleted successfully',
+            user: deletedUser,
+        });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+
+export { createUserAccount, getUsers, editUserAccount, deleteUserAccount };

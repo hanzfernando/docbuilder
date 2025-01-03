@@ -5,8 +5,8 @@ import Template from '../models/templateModel.js';
 const createDocument = async (req, res) => {
     try {
         const { title, template, content } = req.body;
-        console.log(req.body);
-        console.log(req.user);
+        // console.log(req.body);
+        // console.log(req.user);
 
         if (!title || !template || !content) {
             return res.status(400).json({ message: 'All fields are required.' });
@@ -19,7 +19,7 @@ const createDocument = async (req, res) => {
             content,
             user: req.user._id,
         });
-        console.log(document);
+        // console.log(document);
         await document.save();
         res.status(201).json(document);
     } catch (error) {
@@ -76,22 +76,32 @@ const updateDocument = async (req, res) => {
 // Delete a document
 const deleteDocument = async (req, res) => {
     try {
-        const document = await Document.findById(req.params.id);
+        const documentId = req.params.id;
+        const userId = req.user._id;
+
+        console.log(documentId);
+
+        // Find the document
+        const document = await Document.findById(documentId);
         if (!document) {
             return res.status(404).json({ message: 'Document not found.' });
         }
 
-        if (document.user.toString() !== req.user._id.toString()) {
+        // Check if the document belongs to the requesting user
+        if (document.user.toString() !== userId.toString()) {
             return res.status(403).json({ message: 'Unauthorized action.' });
         }
 
-        await document.remove();
+        // Delete the document
+        await Document.findByIdAndDelete(documentId);
+
         res.status(200).json({ message: 'Document deleted successfully.' });
     } catch (error) {
         console.error('Error deleting document:', error);
         res.status(500).json({ message: 'Failed to delete document.' });
     }
 };
+
 
 // Get all documents created by a user
 const getDocumentsByUser = async (req, res) => {

@@ -16,8 +16,7 @@ const LoginPage = () => {
     useEffect(() => {
         // If the user is already logged in, redirect to the appropriate route
         const token = getToken();
-        console.log(token);
-        console.log(user);
+
         if (token) {
             getUserDetails(token)
                 .then((userDetails) => {
@@ -55,7 +54,6 @@ const LoginPage = () => {
         e.preventDefault();
         try {
             await login(email, password);
-            console.log(user);
             if (user) {
                 navigate(getRedirectPath(user.role));
             }

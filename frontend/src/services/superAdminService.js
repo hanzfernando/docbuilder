@@ -7,7 +7,7 @@ export const fetchOrganizations = async (token) => {
             Authorization: `Bearer ${token}`,
         },
     });
-    console.log(response.data);
+    // console.log(response.data);
     return response.data;
 };
 
@@ -32,7 +32,7 @@ export const fetchAdminAccounts = async (token) => {
             Authorization: `Bearer ${token}`,
         },
     });
-    console.log(response.data);
+    // console.log(response.data);
     return response.data;
 };
 
@@ -47,5 +47,29 @@ export const addAdminAccount = async (token, adminData) => {
             },
         }
     );
+    return response.data;
+};
+
+// Edit an admin account
+export const editAdminAccount = async (token, adminId, adminData) => {
+    const response = await axios.put(
+        `${API_URL}/admins/${adminId}`,
+        adminData,
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
+    return response.data;
+};
+
+// Delete an admin account
+export const deleteAdminAccount = async (token, adminId) => {
+    const response = await axios.delete(`${API_URL}/admins/${adminId}`, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
     return response.data;
 };

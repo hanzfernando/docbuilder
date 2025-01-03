@@ -13,9 +13,25 @@ export const getUserDetails = async (token) => {
                 Authorization: `Bearer ${token}`,
             },
         });
-        console.log(response.data);
         return response.data; // Return user details
     } catch (error) {
         throw new Error(error.response?.data?.message || 'Failed to fetch user details');
+    }
+};
+
+export const changePassword = async (currentPassword, newPassword, token) => {
+    try {
+        const response = await axios.put(
+            `${API_URL}/change-password`,
+            { currentPassword, newPassword },
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Error changing password');
     }
 };
