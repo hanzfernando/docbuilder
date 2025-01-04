@@ -15,8 +15,9 @@ dotenv.config()
 const PORT = process.env.PORT
 const app = express()
 
-app.use(express.json());
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '50mb' })); // Increase the limit for JSON payloads
+app.use(express.urlencoded({ limit: '50mb', extended: true })); // Increase the limit for URL-encoded payloads
+
 
 app.use(logger)
 app.use(cors({

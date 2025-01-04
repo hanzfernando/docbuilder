@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
 import { getToken } from '../utils/authUtil.js';
 import { createTemplate, getTemplateById, updateTemplate } from '../services/templateService.js';
+import imageCompression from 'browser-image-compression';
 
 const TemplateContainer = () => {
     const { id } = useParams(); // Fetch ID from the URL if available
@@ -27,64 +28,212 @@ const TemplateContainer = () => {
 
     const selectedPageSize = pageSizes[paperSize];
 
+    // const sharedStyles = `
+    //     body {
+    //         font-family: Arial, sans-serif;
+    //         margin: 0;
+    //         padding: 0;
+    //     }
+
+    //     .non-editable {
+            
+    //     }
+
+    //     .editable {
+    //         background-color: #fffbe6;
+    //         border: 1px dashed #ffa000;
+    //         padding: 2px;
+    //     }
+
+    //     .editable:hover {
+    //         border-color: #ff6f00;
+    //         background-color: #fff3e0;
+    //     }
+
+    //     .page, .mce-content-body {
+    //         width: ${selectedPageSize.width}px;
+    //         min-height: ${selectedPageSize.height - 100}px;
+    //         max-height: ${selectedPageSize.height - 100}px;
+    //         padding: ${DPI}px;
+    //         margin: 2.6rem auto;
+    //         background-color: white;
+    //         border: 1px solid #ddd;
+    //         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    //         font-size: 12pt;
+    //         line-height: 1.15;
+    //     }
+
+    //     .mce-content-body p {
+    //         margin: 0;
+    //         margin-bottom: 8pt;
+    //     }
+
+    //     .header, .footer {
+    //         position: relative; /* Ensure it doesn't interfere with other content flow */
+    //         margin: -0.75in -0.75in 0; /* Negative margin to offset the default margin */
+    //         overflow: hidden; /* Ensure no content spills over */
+    //     }
+
+    //     .footer {
+    //         margin: -0.75in -0.75in; /* Adjust for the footer */
+    //     }
+
+    //     .header img, .footer img {
+    //         width: 100%;
+    //         height: auto;
+    //         display: block;
+    //     }
+
+
+    //     @page {
+    //         size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
+    //         margin: 1in 1in 0in 1in;
+    //     }
+
+    //     @media print {
+    //         .header, .footer {
+    //             position: absolute;
+    //             left: 0;
+    //             width: 100%;
+    //             height: auto;
+    //             margin: 0;
+    //             padding: 0;
+    //         }
+
+    //         .header {
+    //             top: 0;
+    //         }
+
+    //         .footer {
+    //             bottom: 0;
+    //         }
+
+    //         .header img, .footer img {
+    //             width: 100%;
+    //             height: auto;
+    //             display: block;
+    //         }
+
+    //         .page, .mce-content-body {
+    //             overflow-wrap: break-word;
+    //             padding: 0;
+    //             margin: 0 auto;
+    //             box-shadow: none;
+    //             border: none;
+    //             width: ${selectedPageSize.width / DPI}px;
+    //             min-height: ${selectedPageSize.height / DPI}px;
+    //             pagebreak-after: always;
+    //         }
+    //     }
+    // `;
+
     const sharedStyles = `
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .non-editable {
+        /* Styles for non-editable elements */
+    }
+
+    .editable {
+        background-color: #fffbe6;
+        border: 1px dashed #ffa000;
+        padding: 2px;
+    }
+
+    .editable:hover {
+        border-color: #ff6f00;
+        background-color: #fff3e0;
+    }
+
+    .header, .footer {
+        position: relative; /* Ensure it doesn't interfere with other content flow */
+        margin: -0.75in -0.75in 0; /* Negative margin to offset the default margin */
+        overflow: hidden; /* Ensure no content spills over */
+    }
+
+    .footer {
+        margin: -0.70in -0.70in; /* Adjust for the footer */
+    }
+
+    .header img, .footer img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .page, .mce-content-body {
+        width: ${selectedPageSize.width / DPI}in;
+        min-height: ${(selectedPageSize.height / DPI) + 1}in;
+        max-height: ${(selectedPageSize.height / DPI) +1}in;
+        padding: ${DPI}px;
+        box-sizing: border-box;
+        margin: 2.6rem auto;
+        background-color: white;
+        border: 1px solid #ddd;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        font-size: 12pt;
+        line-height: 1.15;
+    }
+
+    .mce-content-body p {
+        margin: 0;
+        margin-bottom: 8pt;
+    }
+`;
+    const printStyles = `
+        @page {
+            size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
+        }
+
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
         }
 
-        .non-editable {
-            
-        }
-
-        .editable {
-            background-color: #fffbe6;
-            border: 1px dashed #ffa000;
-            padding: 2px;
-        }
-
-        .editable:hover {
-            border-color: #ff6f00;
-            background-color: #fff3e0;
-        }
-
         .page, .mce-content-body {
-            width: ${selectedPageSize.width}px;
-            min-height: ${selectedPageSize.height - 100}px;
-            max-height: ${selectedPageSize.height - 100}px;
-            padding: ${DPI}px;
-            margin: 2.6rem auto;
+            position: relative;
+            width: ${selectedPageSize.width / DPI}in;
+            height: ${selectedPageSize.height / DPI}in;
+            padding: ${DPI}px ${DPI - (DPI/4)}px;
+            box-sizing: border-box;
             background-color: white;
-            border: 1px solid #ddd;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            font-size: 12pt;
-            line-height: 1.15;
+            overflow: hidden;
+            page-break-after: always;
         }
 
-        .mce-content-body p {
+        .header, .footer {
+            position: absolute;
+            left: 0;
+            max-height: ${DPI}px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .header {
+            top: 0;
+        }
+
+        .footer {
+            bottom: 0;
+        }
+
+        .header img, .footer img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        p {
             margin: 0;
             margin-bottom: 8pt;
         }
-
-        @page {
-            size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
-            margin: 1in 1in 0in 1in;
-        }
-
-        @media print {
-            .page, .mce-content-body {
-                overflow-wrap: break-word;
-                padding: 0;
-                margin: 0 auto;
-                box-shadow: none;
-                border: none;
-                width: ${selectedPageSize.width}px;
-                min-height: ${selectedPageSize.height}px;
-                pagebreak-after: always;
-            }
-        }
     `;
+
 
     useEffect(() => {
         if (id) {
@@ -113,6 +262,80 @@ const TemplateContainer = () => {
             loadTemplate();
         }
     }, [id]);
+
+    const compressImage = async (file) => {
+        const options = {
+            maxSizeMB: 0.5, // Reduced max file size in MB for higher compression
+            maxWidthOrHeight: 1280, // Smaller dimensions for greater compression
+            useWebWorker: true, // Use Web Workers for faster processing
+        };
+        try {
+            return await imageCompression(file, options);
+        } catch (error) {
+            console.error('Image compression error:', error);
+            throw new Error('Failed to compress image');
+        }
+    };
+    
+
+    const addImageToEditor = (editor, file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            editor.insertContent(`<img src="${reader.result}" alt="Compressed Image" />`);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleImageUpload = (editor) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (file) {
+                try {
+                    const compressedFile = await compressImage(file);
+                    addImageToEditor(editor, compressedFile);
+                } catch (error) {
+                    console.error('Error compressing image:', error.message);
+                    alert('Failed to compress and insert image. Please try again.');
+                }
+            }
+        };
+        input.click();
+    };
+
+    const insertHeaderFooterImage = (editor, position, file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const imageHtml = `
+                <div class="${position}">
+                    <img src="${reader.result}" alt="${position} image" />
+                </div>
+            `;
+            editor.insertContent(imageHtml);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleHeaderFooterUpload = (editor, position) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (file) {
+                try {
+                    const compressedFile = await compressImage(file);
+                    insertHeaderFooterImage(editor, position, compressedFile);
+                } catch (error) {
+                    console.error('Error compressing header/footer image:', error.message);
+                    alert('Failed to add header/footer image. Please try again.');
+                }
+            }
+        };
+        input.click();
+    };
 
     const handleEditorChange = (content, editor, pageId) => {
         const updatedContent = strictMode
@@ -190,8 +413,9 @@ const TemplateContainer = () => {
             } else {
                 await createTemplate(templateData, token);
                 alert('Template created successfully!');
+                navigate('/templates'); // Navigate back to templates page
+
             }
-            navigate('/templates'); // Navigate back to templates page
         } catch (error) {
             console.error('Error saving/updating template:', error.message);
             alert('Failed to save/update template. Please try again.');
@@ -199,52 +423,82 @@ const TemplateContainer = () => {
     };
 
     const handlePrintDocument = () => {
+        const iframe = document.createElement('iframe');
+        document.body.appendChild(iframe);
+        const iframeDoc = iframe.contentWindow.document;
+    
+        // Get the font family from the editor dynamically
+        //const editorContentBody = document.querySelector('.mce-content-body');
+        // const editorFontFamily = window.getComputedStyle(editorContentBody).fontFamily;
+    
+        // Combine content of all pages
         const combinedContent = pages
             .map(
                 (page) => `
-                    <div class="page" style="height: ${selectedPageSize.height}px; page-break-after: always;">
-                        ${page.content}
-                    </div>
-                `
+                <div class="page">
+                    ${page.content.trim() || '<p>&nbsp;</p>'}
+                </div>
+            `
             )
             .join('');
-
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        printWindow.document.open();
-        printWindow.document.write(`
+    
+        iframeDoc.open();
+        iframeDoc.write(`
             <html>
                 <head>
                     <title>Print Document</title>
                     <style>
-                        ${sharedStyles}
-                        @media print {
-                            .page {                 
-                                height: ${selectedPageSize.height}px;
-                                page-break-after: always;
-                            }
-                            .page:last-child {
-                                page-break-after: auto;
-                            }
-                            body {
-                                margin: 0; 
-                                padding: 0; 
-                                box-shadow: none;
-                            }
-                            .page {
-                                margin: 0 auto; 
-                                padding: 0; 
-                            }
+                        ${printStyles}
+                    </style>
+                    <style>
+                        body {
+                            font-family: Arial; /* Dynamically set font family */
                         }
                     </style>
                 </head>
-                <body>${combinedContent}</body>
+                <body>
+                    ${combinedContent}
+                </body>
             </html>
         `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        iframeDoc.close();
+    
+        const iframeWindow = iframe.contentWindow;
+    
+        // Ensure images load before printing
+        const images = iframeDoc.getElementsByTagName('img');
+        const promises = Array.from(images).map((img) => {
+            return new Promise((resolve) => {
+                if (img.complete) {
+                    resolve();
+                } else {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                }
+            });
+        });
+    
+        Promise.all(promises).then(() => {
+            iframeWindow.focus();
+            iframeWindow.print();
+            document.body.removeChild(iframe); // Cleanup the iframe
+        });
     };
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     return (
         <div className="p-4">
@@ -260,7 +514,7 @@ const TemplateContainer = () => {
                     placeholder="Enter document name"
                     className="w-full border rounded p-2 mb-4"
                     required
-                    disabled={editorLoaded} // Lock field once template creation begins
+                    
                 />
                 <label className="block text-gray-700 font-medium mb-2">Document Type:</label>
                 <input
@@ -361,7 +615,7 @@ const TemplateContainer = () => {
                     <div className="mb-4 flex justify-end gap-4">
                         <button
                             onClick={handleAddPage}
-                            disabled={isUpdateMode}
+                            
                             className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
                         >
                             Add Page
@@ -392,13 +646,32 @@ const TemplateContainer = () => {
                                         'media', 'table', 'emoticons', 'help', 'print',
                                     ],
                                     toolbar:
-                                        'undo redo | styles | bold italic underline | fontsize fontfamily | markEditable removeEditable | lineheight pagebreak| ' +
+                                        'undo redo | styles | bold italic underline | fontsize fontfamily addImage addHeaderImage addFooterImage| markEditable removeEditable | lineheight pagebreak| ' +
                                         'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | addHangingIndent removeHangingIndent | ' +
                                         'link image | fullscreen | forecolor backcolor emoticons | help',
                                     fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',
                                     line_height_formats: '1 1.1 1.15 1.2 1.3 1.5 2',
                                     content_style: sharedStyles,
                                     setup: (editor) => {
+
+                                    
+                                        editor.ui.registry.addButton('addHeaderImage', {
+                                            text: 'Add Header Image',
+                                            icon: 'image',
+                                            onAction: () => handleHeaderFooterUpload(editor, 'header'),
+                                        });
+                                        editor.ui.registry.addButton('addFooterImage', {
+                                            text: 'Add Footer Image',
+                                            icon: 'image',
+                                            onAction: () => handleHeaderFooterUpload(editor, 'footer'),
+                                        });
+
+                                        editor.ui.registry.addButton('addImage', {
+                                            text: 'Add Image',
+                                            icon: 'image',
+                                            onAction: () => handleImageUpload(editor),
+                                        });
+
                                         editor.ui.registry.addButton('markEditable', {
                                             text: 'Mark Editable',
                                             onAction: () => {
