@@ -1,26 +1,32 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTemplateContext } from '../hooks/useTemplateContext';
 import { fetchTemplates, deleteTemplate } from '../services/templateService';
 import { useNavigate } from 'react-router-dom';
 import { getToken } from '../utils/authUtil';
-import { useAuthContext } from '../hooks/useAuthContext'; // Assuming you have this hook to get user info
+import { useAuthContext } from '../hooks/useAuthContext';
+import DeleteTemplateModal from './DeleteTemplateModal';
 
 const TemplateListContainer = () => {
     const { templates, loading, error, dispatch } = useTemplateContext();
-    const { user } = useAuthContext(); // Get user from auth context
+    const { user } = useAuthContext();
     const navigate = useNavigate();
-    // console.log('User:', user);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState(null);
 
     useEffect(() => {
         const loadTemplates = async () => {
             dispatch({ type: 'SET_LOADING', payload: true });
             try {
                 const token = getToken();
-                const fetchedTemplates = await fetchTemplates(token); // Use your fetchTemplates service here
+                const fetchedTemplates = await fetchTemplates(token);
                 dispatch({ type: 'SET_TEMPLATES', payload: fetchedTemplates });
             } catch (err) {
                 console.error(err);
-                dispatch({ type: 'SET_ERROR', payload: 'Failed to fetch templates. Please try again later.' });
+                dispatch({
+                    type: 'SET_ERROR',
+                    payload: 'Failed to fetch templates. Please try again later.',
+                });
             } finally {
                 dispatch({ type: 'SET_LOADING', payload: false });
             }
@@ -29,12 +35,21 @@ const TemplateListContainer = () => {
         loadTemplates();
     }, [dispatch]);
 
+    const handleOpenModal = (template) => {
+        setTemplateToDelete(template);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setTemplateToDelete(null);
+        setIsModalOpen(false);
+    };
+
     const handleDeleteTemplate = async (templateId) => {
         try {
             const token = getToken();
-            await deleteTemplate(templateId, token); // Call delete service
-            dispatch({ type: 'DELETE_TEMPLATE', payload: templateId }); // Dispatch reducer action
-            alert('Template deleted successfully');
+            await deleteTemplate(templateId, token);
+            dispatch({ type: 'DELETE_TEMPLATE', payload: templateId });
         } catch (err) {
             console.error('Failed to delete template:', err.message);
             alert(err.message || 'Failed to delete template. Please try again.');
@@ -66,7 +81,7 @@ const TemplateListContainer = () => {
                             <p className="text-gray-700">
                                 <strong>Role:</strong> {template.requiredRole}
                             </p>
-                            <div className="mt-4 flex justify-between">
+                            <div className="mt-4 flex gap-2 ">
                                 <button
                                     className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
                                     onClick={() =>
@@ -82,7 +97,7 @@ const TemplateListContainer = () => {
                                 {user.role === 'admin' && (
                                     <button
                                         className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700"
-                                        onClick={() => handleDeleteTemplate(template._id)}
+                                        onClick={() => handleOpenModal(template)}
                                     >
                                         Delete
                                     </button>
@@ -91,6 +106,15 @@ const TemplateListContainer = () => {
                         </div>
                     ))}
                 </div>
+            )}
+
+            {templateToDelete && (
+                <DeleteTemplateModal
+                    isOpen={isModalOpen}
+                    template={templateToDelete}
+                    onClose={handleCloseModal}
+                    onDelete={handleDeleteTemplate}
+                />
             )}
         </div>
     );
