@@ -4,6 +4,7 @@ import { Editor } from '@tinymce/tinymce-react';
 import { getToken } from '../utils/authUtil';
 import { createDocument, updateDocument, getDocumentById } from '../services/documentService';
 import { getTemplateById } from '../services/templateService';
+import imageCompression from 'browser-image-compression';
 
 const DocumentContainer = () => {
     const { id, templateId } = useParams(); // `id` for the document and `templateId` for creating based on a template
@@ -11,9 +12,10 @@ const DocumentContainer = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [title, setTitle] = useState('');
     const [template, setTemplate] = useState(null);
-    // const [content, setContent] = useState('');
+    const [paperSize, setPaperSize] = useState('letter');
     const [isUpdateMode, setIsUpdateMode] = useState(false);
     const navigate = useNavigate();
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
 
     const DPI = 96; // Fixed DPI for page dimensions
     const pageSizes = {
@@ -22,142 +24,334 @@ const DocumentContainer = () => {
         a4: { width: DPI * 8.27, height: DPI * 11.69 },
     };
 
-    const selectedPageSize = pageSizes.letter;
+    const selectedPageSize = pageSizes[paperSize];
+
+
+    const [margins, setMargins] = useState({
+        top: 1,
+        bottom: 1,
+        left: 1,
+        right: 1,
+    });
 
     const sharedStyles = `
+    @font-face {
+            font-family: 'Century Gothic';
+            src: local('Century Gothic'), /* Uses installed font on the system */
+                url('/fonts/CenturyGothic.woff2') format('woff2'),
+                url('/fonts/CenturyGothic.woff') format('woff'),
+                url('/fonts/CenturyGothic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+    }
+
+    @font-face {
+        font-family: 'Palatino Linotype';
+        src: local('Palatino Linotype'), /* Uses installed font on the system */
+            url('/fonts/PalatinoLinotype.woff2') format('woff2'),
+            url('/fonts/PalatinoLinotype.woff') format('woff'),
+            url('/fonts/PalatinoLinotype.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+            
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .non-editable {
+        /* Styles for non-editable elements */
+    }
+
+    .editable {
+        background-color: #fffbe6;
+        border: 1px dashed #ffa000;
+        padding: 2px;
+    }
+
+    .editable:hover {
+        border-color: #ff6f00;
+        background-color: #fff3e0;
+    }
+
+    .header, .footer {
+        max-height: ${DPI - DPI / 3}px;
+        position: relative;
+        margin: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
+        overflow: hidden;
+    }
+
+    .footer {
+        margin: -0.70in -0.70in; /* Adjust for the footer */
+    }
+
+    .header img, .footer img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .page, .mce-content-body {
+        width: ${selectedPageSize.width / DPI}in;
+        min-height: ${(selectedPageSize.height / DPI) + 1}in;
+        max-height: ${(selectedPageSize.height / DPI) + 1}in;
+        padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
+        box-sizing: border-box;
+        margin: 2.6rem auto;
+        background-color: white;
+        border: 1px solid #ddd;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        font-size: 12pt;
+        line-height: 1.15;
+    }
+
+    .mce-content-body p {
+        margin: 0;
+        margin-bottom: 8pt;
+    }
+    `;
+
+    const printStyles = `
+       @font-face {
+            font-family: 'Century Gothic';
+            src: local('Century Gothic'), /* Uses installed font on the system */
+                url('/fonts/CenturyGothic.woff2') format('woff2'),
+                url('/fonts/CenturyGothic.woff') format('woff'),
+                url('/fonts/CenturyGothic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Palatino Linotype';
+            src: local('Palatino Linotype'), /* Uses installed font on the system */
+                url('/fonts/PalatinoLinotype.woff2') format('woff2'),
+                url('/fonts/PalatinoLinotype.woff') format('woff'),
+                url('/fonts/PalatinoLinotype.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+            
+        @page {
+            size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
+        }
+
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
         }
 
-        .non-editable {
-            pointer-events: none;
-            user-select: none;
-        }
-
-        .non-editable .editable {
-            pointer-events: auto;
-            user-select: auto;
-            background-color: #fffbe6;
-            border: 1px dashed #ffa000;
-            padding: 2px;
-        }
-
-        .non-editable .editable:hover {
-            border-color: #ff6f00;
-            background-color: #fff3e0;
-        }
-
-
         .page, .mce-content-body {
-            width: ${selectedPageSize.width}px;
-            min-height: ${selectedPageSize.height - 100}px;
-            max-height: ${selectedPageSize.height - 100}px;
-            padding: ${DPI}px;
-            margin: 2.6rem auto;
+            position: relative;
+            width: ${selectedPageSize.width / DPI}in;
+            height: ${selectedPageSize.height / DPI}in;
+            // padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
+            padding: ${margins.top - 0.25}in ${margins.right- 0.25}in ${margins.bottom- 0.25}in ${margins.left- 0.25}in;
+
+            box-sizing: border-box;
             background-color: white;
-            border: 1px solid #ddd;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            font-size: 12pt;
-            line-height: 1.15;
+            overflow: hidden;
+            page-break-after: always;
         }
-        .mce-content-body p {
+
+        .header, .footer {
+            position: absolute;
+            left: 0;
+            max-height: ${DPI}px;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .header {
+            top: 0;
+        }
+
+        .footer {
+            bottom: 0;
+        }
+
+        .header img, .footer img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        p {
             margin: 0;
             margin-bottom: 8pt;
-        }
-        @page {
-            size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
-            margin: 1in 1in 0in 1in;
-        }
-        @media print {
-            .page, .mce-content-body {
-                overflow-wrap: break-word;
-                padding: 0;
-                margin: 0 auto;
-                box-shadow: none;
-                border: none;
-                width: ${selectedPageSize.width}px;
-                min-height: ${selectedPageSize.height}px;
-                pagebreak-after: always;
-            }
-
-            .non-editable, .non-editable .editable {
-                background-color: transparent;
-                border: none;
-            }
         }
     `;
 
     useEffect(() => {
         const loadDocumentOrTemplate = async () => {
-            if (id) {
-                // If editing an existing document
-                try {
-                    const token = getToken();
+            try {
+                const token = getToken();
+                if (id) {
                     const documentData = await getDocumentById(id, token);
+
+                    
+                    if (documentData?.template?.margins) {
+                        const { top, bottom, left, right } = documentData.template.margins;
+                        setMargins({
+                            top: typeof top === 'number' ? top : 1,
+                            bottom: typeof bottom === 'number' ? bottom : 1,
+                            left: typeof left === 'number' ? left : 1,
+                            right: typeof right === 'number' ? right : 1,
+                        });
+                    }
+
                     setTitle(documentData.title);
                     setTemplate(documentData.template);
+                    setPaperSize(documentData.template?.paperSize);
+                    
                     setPages(
                         documentData.content.split('<hr style="page-break-after: always;">').map((content, index) => ({
                             id: index + 1,
                             content,
                         }))
                     );
+                    
                     setIsUpdateMode(true);
-                } catch (error) {
-                    console.error('Error loading document:', error.message);
-                    alert('Failed to load document. Please try again.');
-                }
-            } else 
-            if (templateId) {
-                // If creating a new document from a template
-                try {
-                    const token = getToken();
+                } else if (templateId) {
                     const templateData = await getTemplateById(templateId, token);
+    
+                    console.log(templateData);
+                    if (templateData?.margins) { // Check if margins exist
+                        console.log(1);
+                        const { top, bottom, left, right } = templateData.margins;
+                        setMargins({
+                            top:top ,
+                            bottom: bottom,
+                            left: left ,
+                            right: right,
+                        });
+                    }
+    
                     setTemplate(templateData);
+                    setPaperSize(templateData.paperSize); // Lock paper size for updates
                     setPages(
                         templateData.content.split('<hr style="page-break-after: always;">').map((content, index) => ({
                             id: index + 1,
                             content,
                         }))
                     );
-                } catch (error) {
-                    console.error('Error loading template:', error.message);
-                    alert('Failed to load template. Please try again.');
                 }
+                setIsDataLoaded(true); // Mark data as loaded
+            } catch (error) {
+                console.error('Error loading data:', error.message);
+                alert('Failed to load data. Please try again.');
             }
         };
 
         loadDocumentOrTemplate();
     }, [id, templateId]);
 
+    const compressImage = async (file) => {
+        const options = {
+            maxSizeMB: 0.5, // Reduced max file size in MB for higher compression
+            maxWidthOrHeight: 1280, // Smaller dimensions for greater compression
+            useWebWorker: true, // Use Web Workers for faster processing
+        };
+        try {
+            return await imageCompression(file, options);
+        } catch (error) {
+            console.error('Image compression error:', error);
+            throw new Error('Failed to compress image');
+        }
+    };
+    
+
+    const addImageToEditor = (editor, file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            editor.insertContent(`<img src="${reader.result}" alt="Compressed Image" />`);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleImageUpload = (editor) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (file) {
+                try {
+                    const compressedFile = await compressImage(file);
+                    addImageToEditor(editor, compressedFile);
+                } catch (error) {
+                    console.error('Error compressing image:', error.message);
+                    alert('Failed to compress and insert image. Please try again.');
+                }
+            }
+        };
+        input.click();
+    };
+
+    const insertHeaderFooterImage = (editor, position, file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const imageHtml = `
+                <div class="${position}">
+                    <img src="${reader.result}" alt="${position} image" />
+                </div>
+            `;
+            editor.insertContent(imageHtml);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleHeaderFooterUpload = (editor, position) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = async () => {
+            const file = input.files[0];
+            if (file) {
+                try {
+                    const compressedFile = await compressImage(file);
+                    insertHeaderFooterImage(editor, position, compressedFile);
+                } catch (error) {
+                    console.error('Error compressing header/footer image:', error.message);
+                    alert('Failed to add header/footer image. Please try again.');
+                }
+            }
+        };
+        input.click();
+    };
+
+        
     const handleEditorChange = (content, pageId) => {
         setPages((prevPages) =>
             prevPages.map((page) => (page.id === pageId ? { ...page, content } : page))
         );
     };
 
-    // const handleAddPage = () => {
-    //     setPages((prevPages) => [
-    //         ...prevPages,
-    //         { id: prevPages.length + 1, content: '' },
-    //     ]);
-    //     setCurrentPage(pages.length + 1);
-    // };
 
-    // const handleDeletePage = () => {
-    //     if (pages.length > 1) {
-    //         const confirmed = window.confirm('Are you sure you want to delete this page?');
-    //         if (confirmed) {
-    //             const newPages = pages.filter((page) => page.id !== currentPage);
-    //             setPages(newPages);
-    //             setCurrentPage((prev) => (prev > newPages.length ? newPages.length : prev));
-    //         }
-    //     } else {
-    //         alert('You cannot delete the last page!');
-    //     }
-    // };
+    const handleAddPage = () => {
+        setPages((prevPages) => [
+            ...prevPages,
+            { id: prevPages.length + 1, content: '' },
+        ]);
+        setCurrentPage(pages.length + 1);
+    };
+
+    const handleDeletePage = () => {
+        if (pages.length > 1) {
+            const confirmed = window.confirm('Are you sure you want to delete this page?');
+            if (confirmed) {
+                const newPages = pages.filter((page) => page.id !== currentPage);
+                setPages(newPages);
+                setCurrentPage((prev) => (prev > newPages.length ? newPages.length : prev));
+            }
+        } else {
+            alert('You cannot delete the last page!');
+        }
+    };
 
     const handleNextPage = () => {
         if (currentPage < pages.length) {
@@ -183,6 +377,7 @@ const DocumentContainer = () => {
             title,
             template: template?._id,
             content: combinedContent,
+            margins,
         };
 
         try {
@@ -193,8 +388,9 @@ const DocumentContainer = () => {
             } else {
                 await createDocument(documentData, token);
                 alert('Document created successfully!');
+                navigate('/documents');
             }
-            navigate('/documents'); // Redirect after save/update
+             // Redirect after save/update
         } catch (error) {
             console.error('Error saving/updating document:', error.message);
             alert('Failed to save/update document. Please try again.');
@@ -202,51 +398,66 @@ const DocumentContainer = () => {
     };
 
     const handlePrintDocument = () => {
+        const iframe = document.createElement('iframe');
+        document.body.appendChild(iframe);
+        const iframeDoc = iframe.contentWindow.document;
+    
+        // Get the font family from the editor dynamically
+        //const editorContentBody = document.querySelector('.mce-content-body');
+        // const editorFontFamily = window.getComputedStyle(editorContentBody).fontFamily;
+    
+        // Combine content of all pages
         const combinedContent = pages
             .map(
                 (page) => `
-                    <div class="page" style="height: ${selectedPageSize.height}px; page-break-after: always;">
-                        ${page.content}
-                    </div>
-                `
+                <div class="page">
+                    ${page.content.trim() || '<p>&nbsp;</p>'}
+                </div>
+            `
             )
             .join('');
-
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        printWindow.document.open();
-        printWindow.document.write(`
+    
+        iframeDoc.open();
+        iframeDoc.write(`
             <html>
                 <head>
                     <title>Print Document</title>
                     <style>
-                        ${sharedStyles}
-                        @media print {
-                            .page {                 
-                                height: ${selectedPageSize.height}px;
-                                page-break-after: always;
-                            }
-                            .page:last-child {
-                                page-break-after: auto;
-                            }
-                            body {
-                                margin: 0; 
-                                padding: 0; 
-                                box-shadow: none;
-                            }
-                            .page {
-                                margin: 0 auto; 
-                                padding: 0; 
-                            }
+                        ${printStyles}
+                    </style>
+                    <style>
+                        body {
+                            font-family: Arial; /* Dynamically set font family */
                         }
                     </style>
                 </head>
-                <body>${combinedContent}</body>
+                <body>
+                    ${combinedContent}
+                </body>
             </html>
         `);
-        printWindow.document.close();
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        iframeDoc.close();
+    
+        const iframeWindow = iframe.contentWindow;
+    
+        // Ensure images load before printing
+        const images = iframeDoc.getElementsByTagName('img');
+        const promises = Array.from(images).map((img) => {
+            return new Promise((resolve) => {
+                if (img.complete) {
+                    resolve();
+                } else {
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                }
+            });
+        });
+    
+        Promise.all(promises).then(() => {
+            iframeWindow.focus();
+            iframeWindow.print();
+            document.body.removeChild(iframe); // Cleanup the iframe
+        });
     };
 
     return (
@@ -287,7 +498,25 @@ const DocumentContainer = () => {
                         Next
                     </button>
                 </div>
-                {pages.map((page) => (
+
+                {/* Add/Delete Buttons */}
+                <div className="mb-4 flex justify-end gap-4">
+                        <button
+                            onClick={handleAddPage}
+                            
+                            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700"
+                        >
+                            Add Page
+                        </button>
+                        <button
+                            onClick={handleDeletePage}
+                            className="bg-red-500 text-white py-2 px-4 rounded hover:bg-red-700"
+                        >
+                            Delete Page
+                        </button>
+                    </div>
+
+                {isDataLoaded ? (pages.map((page) => (
                     <div key={page.id} style={{ display: currentPage === page.id ? 'block' : 'none' }}>
                         <Editor
                             apiKey="0u9umuem86bbky3tbhbd94u9ebh6ocdmhar9om8kgfqiffmz"
@@ -296,18 +525,49 @@ const DocumentContainer = () => {
                                 height: selectedPageSize.height,
                                 menubar: true,
                                 plugins: [
-                                    'advlist autolink lists link image charmap print preview anchor',
-                                    'searchreplace visualblocks code fullscreen',
-                                    'insertdatetime media table paste code help wordcount',
+                                    'advlist', 'autolink', 'lists', 'link', 'image', 'lists', 'pagebreak',
+                                    'searchreplace', 'wordcount','code', 'fullscreen',
+                                    'insertdatetime', 'media', 'table', 'paste', 'code', 'help', 'wordcount'
                                 ],
                                 toolbar:
                                     'undo redo | formatselect | bold italic backcolor | ' +
                                     'alignleft aligncenter alignright alignjustify | ' +
-                                    'bullist numlist outdent indent | addHangingIndent removeHangingIndent | removeformat | help',
+                                    'bullist numlist outdent indent | addHangingIndent removeHangingIndent | addImage addHeaderImage addFooterImage | help',
                                 content_style: sharedStyles,
                                 readonly: 1,
                                 browser_spellcheck: true,
                                 setup: (editor) => {
+
+                                    editor.on('keydown', (event) => {
+                                        if (event.key === 'Tab') {
+                                            event.preventDefault(); // Prevent default tab behavior
+                                            const selection = editor.selection;
+                                            const content = selection.getContent({ format: 'html' });
+                                            
+                                            // Insert a "tab" as multiple non-breaking spaces
+                                            const tabEquivalent = '&nbsp;&nbsp;&nbsp;&nbsp;'; // 4 spaces (adjust as needed)
+                                            const newContent = `${tabEquivalent}${content}`;
+                                            selection.setContent(newContent);
+                                        }
+                                    });
+
+                                    editor.ui.registry.addButton('addHeaderImage', {
+                                        text: 'Add Header Image',
+                                        icon: 'image',
+                                        onAction: () => handleHeaderFooterUpload(editor, 'header'),
+                                    });
+                                    editor.ui.registry.addButton('addFooterImage', {
+                                        text: 'Add Footer Image',
+                                        icon: 'image',
+                                        onAction: () => handleHeaderFooterUpload(editor, 'footer'),
+                                    });
+
+                                    editor.ui.registry.addButton('addImage', {
+                                        text: 'Add Image',
+                                        icon: 'image',
+                                        onAction: () => handleImageUpload(editor),
+                                    });
+                                    
                                     // Prevent interaction outside of editable spans within non-editable blocks
                                     editor.on('BeforeExecCommand', (e) => {
                                         const selectedNode = editor.selection.getNode();
@@ -402,8 +662,12 @@ const DocumentContainer = () => {
                             onEditorChange={(content) => handleEditorChange(content, page.id)}
                         />
                     </div>
-                ))}
+                ))): (
+                    <p>Loading editor...</p>
+                )}
             </div>
+
+            
 
             <div className="mt-4 flex gap-4">
                 <button
@@ -430,3 +694,5 @@ const DocumentContainer = () => {
 };
 
 export default DocumentContainer;
+
+// asdfasdfasdfasdfasdfasdfasdfasdfaasd

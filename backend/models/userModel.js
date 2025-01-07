@@ -30,7 +30,12 @@ const userSchema = new mongoose.Schema(
                 return this.role && this.role !== 'superadmin';
             }
         },
-        
+        studentId: {
+            type: String,
+            required: function () {
+                return this.role === 'student';
+            },
+        },
         role: { 
             type: String, 
             enum: ["superadmin", "admin", "organization", "student"], 
@@ -66,6 +71,10 @@ userSchema.statics.signup = async function (firstname, lastname, email, password
     try {
         if (!firstname || !lastname || !email || !password) {
             throw new Error('Please provide name, email, and password');
+        }
+
+        if (role === 'student' && !studentId) {
+            throw new Error('Student ID is required for a student role');
         }
 
         const exists = await this.findOne({ email });

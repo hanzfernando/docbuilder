@@ -13,6 +13,7 @@ export const fetchUserAccounts = async (token) => {
 
 // Add a user account
 export const addUserAccount = async (token, userDetails) => {
+    console.log(userDetails);
     const response = await axios.post(`${API_URL}/users`, userDetails, {
         headers: {
             Authorization: `Bearer ${token}`,

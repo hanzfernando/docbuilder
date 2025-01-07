@@ -1,9 +1,9 @@
 import PropTypes from 'prop-types';
 import { AuthProvider } from './AuthContext';
-import { OrganizationProvider } from './OrganizationContext';
+import { OrganizationProvider } from './OrganizationContext.jsx';
 import { UserProvider } from './UserContext';
-import { TemplateProvider } from './TemplateContext';
-import { DocumentProvider } from './DocumentContext';
+import { TemplateProvider } from './TemplateContext.jsx';
+import { DocumentProvider } from './DocumentContext.jsx';
 const AppProvider = ({ children }) => {
     return (
         <AuthProvider>

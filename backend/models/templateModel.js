@@ -32,6 +32,12 @@ const templateSchema = new mongoose.Schema(
             ref: 'Organization', 
             required: true 
         },
+        margins: {
+            top: { type: Number, default: 1 }, // Default value: 1 inch
+            bottom: { type: Number, default: 1 },
+            left: { type: Number, default: 1 },
+            right: { type: Number, default: 1 }
+        }
     },
     {
         timestamps: true

@@ -43,7 +43,8 @@ const AdminUsersPage = () => {
         const filtered = users.filter((user) =>
             `${user.firstname} ${user.lastname}`.toLowerCase().includes(query) ||
             `${user.role}`.toLowerCase().includes(query) ||
-            (user.organization?.name || '').toLowerCase().includes(query)
+            (user.organization?.name || '').toLowerCase().includes(query) || 
+            `${user.studentId}`.toLowerCase().includes(query)
         );
         setFilteredUsers(filtered);
     };
@@ -63,7 +64,7 @@ const AdminUsersPage = () => {
             });
             setIsAddUserModalOpen(false);
         } catch (error) {
-            console.error('Failed to add user:', error);
+            console.error('Failed to add user:', error.message);
         }
     };
 

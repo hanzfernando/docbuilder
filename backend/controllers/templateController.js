@@ -70,7 +70,7 @@ const getTemplateHeaderById = async (req, res) => {
 // Create Template
 const createTemplate = async (req, res) => {
     try {
-        const { name, content, type, subtype, paperSize, requiredRole } = req.body;
+        const { name, content, type, subtype, paperSize, margins, requiredRole } = req.body;
         const { organization } = req.user;
 
         // Validate required fields
@@ -86,6 +86,7 @@ const createTemplate = async (req, res) => {
             paperSize,
             requiredRole,
             organization,
+            margins
         });
 
         await template.save();
@@ -100,7 +101,7 @@ const createTemplate = async (req, res) => {
 const updateTemplate = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, content, type, subtype, requiredRole } = req.body;
+        const { name, content, type, subtype, margins, requiredRole } = req.body;
         const { organization } = req.user;
 
         const template = await Template.findOne({ _id: id, organization });
@@ -113,6 +114,7 @@ const updateTemplate = async (req, res) => {
         if (content) template.content = content;
         if (type) template.type = type;
         if (subtype) template.subtype = subtype;
+        if (margins) template.margins = margins;
         if (requiredRole) template.requiredRole = requiredRole;
 
         await template.save();

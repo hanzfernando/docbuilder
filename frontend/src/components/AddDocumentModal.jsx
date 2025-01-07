@@ -101,7 +101,7 @@ const AddDocumentModal = ({ onClose }) => {
                         </select>
                     </label>
                 )}
-                <div className="mt-4">
+                <div className="mt-4 max-h-[40vh] overflow-y-auto">
                     {documentType && (
                         <FilteredTemplateListContainer
                             templates={[
@@ -132,6 +132,7 @@ const AddDocumentModal = ({ onClose }) => {
                 </button>
             </div>
         </div>
+
     );
 };
 

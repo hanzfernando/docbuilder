@@ -9,6 +9,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [role, setRole] = useState('student'); // Default role
+    const [studentId, setStudentId] = useState(''); // Add studentId state
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -18,6 +19,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }) => {
             email,
             password,
             role,
+            studentId: role === 'student' ? studentId : null, // Include studentId if role is student
             organization: user.organization._id, // Use admin's organization ID
             organizationName: user.organization.name, // Include the organization name
         };
@@ -27,6 +29,7 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }) => {
         setEmail('');
         setPassword('');
         setRole('student');
+        setStudentId('');
     };
 
     if (!isOpen) return null;
@@ -87,6 +90,18 @@ const AddUserModal = ({ isOpen, onClose, onSubmit }) => {
                             <option value="organization">Organization</option>
                         </select>
                     </div>
+                    {role === 'student' && ( // Conditionally render studentId input field
+                        <div className="mb-4">
+                            <label className="block text-gray-700 font-medium mb-2">Student ID</label>
+                            <input
+                                type="text"
+                                value={studentId}
+                                onChange={(e) => setStudentId(e.target.value)}
+                                className="border rounded p-2 w-full"
+                                required
+                            />
+                        </div>
+                    )}
                     <div className="mb-4">
                         <label className="block text-gray-700 font-medium mb-2">Organization</label>
                         <p className="text-gray-700">{user.organization?.name || 'N/A'}</p>

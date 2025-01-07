@@ -26,108 +26,37 @@ const TemplateContainer = () => {
         a4: { width: DPI * 8.27, height: DPI * 11.69 },
     };
 
+    const [margins, setMargins] = useState({
+        top: 1, // Default: 1 inch
+        bottom: 1,
+        left: 1,
+        right: 1,
+    });
+
     const selectedPageSize = pageSizes[paperSize];
 
-    // const sharedStyles = `
-    //     body {
-    //         font-family: Arial, sans-serif;
-    //         margin: 0;
-    //         padding: 0;
-    //     }
-
-    //     .non-editable {
-            
-    //     }
-
-    //     .editable {
-    //         background-color: #fffbe6;
-    //         border: 1px dashed #ffa000;
-    //         padding: 2px;
-    //     }
-
-    //     .editable:hover {
-    //         border-color: #ff6f00;
-    //         background-color: #fff3e0;
-    //     }
-
-    //     .page, .mce-content-body {
-    //         width: ${selectedPageSize.width}px;
-    //         min-height: ${selectedPageSize.height - 100}px;
-    //         max-height: ${selectedPageSize.height - 100}px;
-    //         padding: ${DPI}px;
-    //         margin: 2.6rem auto;
-    //         background-color: white;
-    //         border: 1px solid #ddd;
-    //         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    //         font-size: 12pt;
-    //         line-height: 1.15;
-    //     }
-
-    //     .mce-content-body p {
-    //         margin: 0;
-    //         margin-bottom: 8pt;
-    //     }
-
-    //     .header, .footer {
-    //         position: relative; /* Ensure it doesn't interfere with other content flow */
-    //         margin: -0.75in -0.75in 0; /* Negative margin to offset the default margin */
-    //         overflow: hidden; /* Ensure no content spills over */
-    //     }
-
-    //     .footer {
-    //         margin: -0.75in -0.75in; /* Adjust for the footer */
-    //     }
-
-    //     .header img, .footer img {
-    //         width: 100%;
-    //         height: auto;
-    //         display: block;
-    //     }
-
-
-    //     @page {
-    //         size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
-    //         margin: 1in 1in 0in 1in;
-    //     }
-
-    //     @media print {
-    //         .header, .footer {
-    //             position: absolute;
-    //             left: 0;
-    //             width: 100%;
-    //             height: auto;
-    //             margin: 0;
-    //             padding: 0;
-    //         }
-
-    //         .header {
-    //             top: 0;
-    //         }
-
-    //         .footer {
-    //             bottom: 0;
-    //         }
-
-    //         .header img, .footer img {
-    //             width: 100%;
-    //             height: auto;
-    //             display: block;
-    //         }
-
-    //         .page, .mce-content-body {
-    //             overflow-wrap: break-word;
-    //             padding: 0;
-    //             margin: 0 auto;
-    //             box-shadow: none;
-    //             border: none;
-    //             width: ${selectedPageSize.width / DPI}px;
-    //             min-height: ${selectedPageSize.height / DPI}px;
-    //             pagebreak-after: always;
-    //         }
-    //     }
-    // `;
 
     const sharedStyles = `
+    @font-face {
+            font-family: 'Century Gothic';
+            src: local('Century Gothic'), /* Uses installed font on the system */
+                url('/fonts/CenturyGothic.woff2') format('woff2'),
+                url('/fonts/CenturyGothic.woff') format('woff'),
+                url('/fonts/CenturyGothic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+    }
+
+    @font-face {
+        font-family: 'Palatino Linotype';
+        src: local('Palatino Linotype'), /* Uses installed font on the system */
+            url('/fonts/PalatinoLinotype.woff2') format('woff2'),
+            url('/fonts/PalatinoLinotype.woff') format('woff'),
+            url('/fonts/PalatinoLinotype.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+        
     body {
         font-family: Arial, sans-serif;
         margin: 0;
@@ -150,8 +79,9 @@ const TemplateContainer = () => {
     }
 
     .header, .footer {
+        max-height: ${DPI - DPI/3}px;
         position: relative; /* Ensure it doesn't interfere with other content flow */
-        margin: -0.75in -0.75in 0; /* Negative margin to offset the default margin */
+        margin: -${margins.top - 0.25}in -${margins.right - 0.25}in 0 -${margins.left - 0.25}in;
         overflow: hidden; /* Ensure no content spills over */
     }
 
@@ -168,8 +98,8 @@ const TemplateContainer = () => {
     .page, .mce-content-body {
         width: ${selectedPageSize.width / DPI}in;
         min-height: ${(selectedPageSize.height / DPI) + 1}in;
-        max-height: ${(selectedPageSize.height / DPI) +1}in;
-        padding: ${DPI}px;
+        max-height: ${(selectedPageSize.height / DPI) + 1}in;
+        padding: ${DPI * margins.top}px ${DPI * margins.right}px ${DPI * margins.bottom}px ${DPI * margins.left}px;
         box-sizing: border-box;
         margin: 2.6rem auto;
         background-color: white;
@@ -185,6 +115,29 @@ const TemplateContainer = () => {
     }
 `;
     const printStyles = `
+        @font-face {
+            font-family: 'Century Gothic';
+            src: local('Century Gothic'), /* Uses installed font on the system */
+                url('/fonts/CenturyGothic.woff2') format('woff2'),
+                url('/fonts/CenturyGothic.woff') format('woff'),
+                url('/fonts/CenturyGothic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Palatino Linotype';
+            src: local('Palatino Linotype'), /* Uses installed font on the system */
+                url('/fonts/PalatinoLinotype.woff2') format('woff2'),
+                url('/fonts/PalatinoLinotype.woff') format('woff'),
+                url('/fonts/PalatinoLinotype.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        
+           
+            
         @page {
             size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
         }
@@ -198,7 +151,7 @@ const TemplateContainer = () => {
             position: relative;
             width: ${selectedPageSize.width / DPI}in;
             height: ${selectedPageSize.height / DPI}in;
-            padding: ${DPI}px ${DPI - (DPI/4)}px;
+            padding: ${margins.top - 0.25}in ${margins.right- 0.25}in ${margins.bottom- 0.25}in ${margins.left- 0.25}in;
             box-sizing: border-box;
             background-color: white;
             overflow: hidden;
@@ -212,6 +165,7 @@ const TemplateContainer = () => {
             width: 100%;
             margin: 0;
             padding: 0;
+            overflow: hidden;
         }
 
         .header {
@@ -252,6 +206,13 @@ const TemplateContainer = () => {
                             content,
                         }))
                     );
+                    if (templateData.margins) {
+                        setMargins(templateData.margins);
+                    }
+                    // Check for non-editable class in the content
+                    const hasNonEditable = templateData.content.includes('class="non-editable"');
+                    setStrictMode(hasNonEditable);
+    
                     setIsUpdateMode(true);
                     setEditorLoaded(true);
                 } catch (error) {
@@ -262,6 +223,15 @@ const TemplateContainer = () => {
             loadTemplate();
         }
     }, [id]);
+    
+
+    const handleMarginChange = (e) => {
+        const { name, value } = e.target;
+        setMargins((prevMargins) => ({
+            ...prevMargins,
+            [name]: parseFloat(value),
+        }));
+    };
 
     const compressImage = async (file) => {
         const options = {
@@ -351,7 +321,24 @@ const TemplateContainer = () => {
         );
     };
 
-    const toggleStrictMode = () => setStrictMode(!strictMode);
+    const toggleStrictMode = () => {
+        setStrictMode((prevStrictMode) => {
+            const newStrictMode = !prevStrictMode;
+    
+            // Update the content of all pages based on strict mode
+            setPages((prevPages) =>
+                prevPages.map((page) => ({
+                    ...page,
+                    content: newStrictMode
+                        ? `<div class="non-editable">${page.content}</div>` // Add non-editable class
+                        : page.content.replace(/<div class="non-editable">(.*?)<\/div>/gs, '$1'), // Remove non-editable class
+                }))
+            );
+    
+            return newStrictMode;
+        });
+    };
+    
 
     const handleAddPage = () => {
         setPages((prevPages) => [
@@ -402,7 +389,8 @@ const TemplateContainer = () => {
             type: documentType,
             subtype: documentSubtype,
             requiredRole,
-            paperSize
+            paperSize,
+            margins
         };
 
         try {
@@ -514,7 +502,6 @@ const TemplateContainer = () => {
                     placeholder="Enter document name"
                     className="w-full border rounded p-2 mb-4"
                     required
-                    
                 />
                 <label className="block text-gray-700 font-medium mb-2">Document Type:</label>
                 <input
@@ -524,7 +511,7 @@ const TemplateContainer = () => {
                     placeholder="Enter document type (e.g., Proposal, Report)"
                     className="w-full border rounded p-2 mb-4"
                     required
-                    disabled={editorLoaded} // Lock field once template creation begins
+                    // disabled={editorLoaded} // Lock field once template creation begins
                 />
                 <label className="block text-gray-700 font-medium mb-2">Document Subtype:</label>
                 <input
@@ -533,7 +520,7 @@ const TemplateContainer = () => {
                     onChange={(e) => setDocumentSubtype(e.target.value)}
                     placeholder="Enter document subtype (optional)"
                     className="w-full border rounded p-2 mb-4"
-                    disabled={editorLoaded} // Lock field once template creation begins
+                    // disabled={editorLoaded} // Lock field once template creation begins
                 />
                 <label className="block text-gray-700 font-medium mb-2">Template For:</label>
                 <select
@@ -541,7 +528,7 @@ const TemplateContainer = () => {
                     onChange={(e) => setRequiredRole(e.target.value)}
                     className="border rounded p-2 mb-4"
                     required
-                    disabled={editorLoaded} // Lock field once template creation begins
+                    // disabled={editorLoaded} // Lock field once template creation begins
                 >
                     <option value="">Select Role</option>
                     <option value="student">Student</option>
@@ -553,7 +540,7 @@ const TemplateContainer = () => {
                     checked={strictMode}
                     onChange={toggleStrictMode}
                     className="mr-2"
-                    disabled={editorLoaded} // Lock toggle once template creation begins
+                    // disabled={editorLoaded} // Lock toggle once template creation begins
                 />
                 Enable strict mode
                 <label className="block text-gray-700 font-medium mb-2">Paper Size:</label>
@@ -568,6 +555,59 @@ const TemplateContainer = () => {
                     <option value="legal">Legal (8.5in x 14in)</option>
                     <option value="a4">A4 (8.27in x 11.69in)</option>
                 </select>
+
+                {/* Margin Settings */}
+                <h2 className="text-xl font-medium mb-4">Margins (in inches):</h2>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Top Margin:</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            name="top"
+                            value={margins.top}
+                            onChange={handleMarginChange}
+                            className="w-full border rounded p-2 mb-4"
+                            // disabled={editorLoaded} // Lock field once template creation begins
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Bottom Margin:</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            name="bottom"
+                            value={margins.bottom}
+                            onChange={handleMarginChange}
+                            className="w-full border rounded p-2 mb-4"
+                            // disabled={editorLoaded} // Lock field once template creation begins
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Left Margin:</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            name="left"
+                            value={margins.left}
+                            onChange={handleMarginChange}
+                            className="w-full border rounded p-2 mb-4"
+                            // disabled={editorLoaded} // Lock field once template creation begins
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Right Margin:</label>
+                        <input
+                            type="number"
+                            step="0.1"
+                            name="right"
+                            value={margins.right}
+                            onChange={handleMarginChange}
+                            className="w-full border rounded p-2 mb-4"
+                            // disabled={editorLoaded} // Lock field once template creation begins
+                        />
+                    </div>
+                </div>
 
                 <button
                     onClick={() => {
@@ -586,6 +626,7 @@ const TemplateContainer = () => {
                     Begin Template Creation
                 </button>
             </div>
+
 
 
             {editorLoaded && (
@@ -651,9 +692,40 @@ const TemplateContainer = () => {
                                         'link image | fullscreen | forecolor backcolor emoticons | help',
                                     fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',
                                     line_height_formats: '1 1.1 1.15 1.2 1.3 1.5 2',
+                                    font_family_formats:
+                                        "Andale Mono=andale mono,times; " +
+                                        "Arial=arial,helvetica,sans-serif; " +
+                                        "Arial Black=arial black,avant garde; " +
+                                        "Book Antiqua=book antiqua,palatino; " +
+                                        "Century Gothic=Century Gothic,sans-serif; " +
+                                        "Comic Sans MS=comic sans ms,sans-serif; " +
+                                        "Courier New=courier new,courier; " +
+                                        "Georgia=georgia,palatino; " +
+                                        "Helvetica=helvetica; " +
+                                        "Palatino Linotype=Palatino Linotype,serif; " +
+                                        "Impact=impact,chicago; " +
+                                        "Questrial=Questrial,sans-serif; " +
+                                        "Symbol=symbol; " +
+                                        "Tahoma=tahoma,arial,helvetica,sans-serif; " +
+                                        "Terminal=terminal,monaco; " +
+                                        "Times New Roman=times new roman,times; " +
+                                        "Trebuchet MS=trebuchet ms,geneva; " +
+                                        "Verdana=verdana,geneva; ",
                                     content_style: sharedStyles,
                                     setup: (editor) => {
-
+                                        
+                                        editor.on('keydown', (event) => {
+                                            if (event.key === 'Tab') {
+                                                event.preventDefault(); // Prevent default tab behavior
+                                                const selection = editor.selection;
+                                                const content = selection.getContent({ format: 'html' });
+                                                
+                                                // Insert a "tab" as multiple non-breaking spaces
+                                                const tabEquivalent = '&nbsp;&nbsp;&nbsp;&nbsp;'; // 4 spaces (adjust as needed)
+                                                const newContent = `${tabEquivalent}${content}`;
+                                                selection.setContent(newContent);
+                                            }
+                                        });
                                     
                                         editor.ui.registry.addButton('addHeaderImage', {
                                             text: 'Add Header Image',

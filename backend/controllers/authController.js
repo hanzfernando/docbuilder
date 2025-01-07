@@ -96,19 +96,33 @@ const changePassword = async (req, res) => {
 };
 
 // Reset Password Controller
-const resetPassword = async (req, res) => {
+const resetUserPassword = async (req, res) => {
     try {
         const { email, newPassword } = req.body;
+        const { user: requestingUser } = req;
 
+        // Validate input
         if (!email || !newPassword) {
             return res.status(400).json({ message: 'Email and new password are required' });
         }
 
+        // Find the user to reset
         const user = await User.findOne({ email });
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
 
+        // Check if the user being reset has a valid role
+        if (!['student', 'organization'].includes(user.role)) {
+            return res.status(403).json({ message: 'Password reset allowed only for students or organizations' });
+        }
+
+        // Check if the requesting user and the target user belong to the same organization
+        if (user.organization.toString() !== requestingUser.organization.toString()) {
+            return res.status(403).json({ message: 'You can only reset passwords for users in your organization' });
+        }
+
+        // Update the user's password
         user.password = newPassword; // Password will be hashed in the pre-save middleware
         await user.save();
 
@@ -119,76 +133,38 @@ const resetPassword = async (req, res) => {
     }
 };
 
-// // Create a new template
-// const createTemplate = async (req, res) => {
-//     try {
-//         const { name, content, type, subtype, requiredRole, organization } = req.body;
+const resetAdminPassword = async (req, res) => {
+    try {
+        const { email, newPassword } = req.body;
 
-//         if (!name || !content || !type || !requiredRole || !organization) {
-//             return res.status(400).json({ message: 'All required fields must be provided.' });
-//         }
+        // Validate input
+        if (!email || !newPassword) {
+            return res.status(400).json({ message: 'Email and new password are required' });
+        }
 
-//         const newTemplate = new Template({
-//             name,
-//             content,
-//             type,
-//             subtype,
-//             requiredRole,
-//             organization,
-//         });
+        // Find the user to reset
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: 'Admin user not found' });
+        }
 
-//         const savedTemplate = await newTemplate.save();
-//         res.status(201).json(savedTemplate);
-//     } catch (error) {
-//         res.status(500).json({ message: 'Error creating template', error: error.message });
-//     }
-// };
+        // Check if the user being reset has the role of admin
+        if (user.role !== 'admin') {
+            return res.status(403).json({ message: 'Password reset is allowed only for admin users' });
+        }
 
-// // Get all templates
-// const getTemplates = async (req, res) => {
-//     try {
-//         const templates = await Template.find().populate('organization', 'name'); // Populate organization details if needed
-//         res.status(200).json(templates);
-//     } catch (error) {
-//         res.status(500).json({ message: 'Error fetching templates', error: error.message });
-//     }
-// };
+        // Update the user's password
+        user.password = newPassword; // Password will be hashed in the pre-save middleware
+        await user.save();
 
-// // Get a template by ID
-// const getTemplateById = async (req, res) => {
-//     try {
-//         const template = await Template.findById(req.params.id).populate('organization', 'name');
-//         if (!template) {
-//             return res.status(404).json({ message: 'Template not found' });
-//         }
-//         res.status(200).json(template);
-//     } catch (error) {
-//         res.status(500).json({ message: 'Error fetching template', error: error.message });
-//     }
-// };
-
-// // Update a template
-// const updateTemplate = async (req, res) => {
-//     try {
-//         const { name, content, type, subtype, requiredRole, organization } = req.body;
-
-//         const updatedTemplate = await Template.findByIdAndUpdate(
-//             req.params.id,
-//             { name, content, type, subtype, requiredRole, organization },
-//             { new: true } // Return the updated document
-//         );
-
-//         if (!updatedTemplate) {
-//             return res.status(404).json({ message: 'Template not found' });
-//         }
-
-//         res.status(200).json(updatedTemplate);
-//     } catch (error) {
-//         res.status(500).json({ message: 'Error updating template', error: error.message });
-//     }
-// };
+        res.status(200).json({ message: 'Admin password reset successfully' });
+    } catch (error) {
+        console.error('Error resetting admin password:', error.message);
+        res.status(500).json({ message: 'Failed to reset admin password', error: error.message });
+    }
+};
 
 
 
-export { loginUser, getUserDetails, changePassword, resetPassword };
+export { loginUser, getUserDetails, changePassword, resetUserPassword, resetAdminPassword };
 

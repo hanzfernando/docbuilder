@@ -6,6 +6,8 @@ const EditAdminModal = ({ isOpen, user, onClose, onEdit }) => {
         firstname: user.firstname,
         lastname: user.lastname,
         email: user.email,
+        role: user.role,
+        studentId: user.role === 'student' ? user.studentId || '' : '', // Add studentId if role is student
     });
 
     const handleInputChange = (e) => {
@@ -23,7 +25,7 @@ const EditAdminModal = ({ isOpen, user, onClose, onEdit }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="bg-white p-6 rounded shadow-lg max-w-sm">
-                <h2 className="text-lg font-bold mb-4">Edit Admin</h2>
+                <h2 className="text-lg font-bold mb-4">Edit User</h2>
                 <form>
                     <div className="mb-4">
                         <label className="block text-gray-700">First Name</label>
@@ -55,6 +57,19 @@ const EditAdminModal = ({ isOpen, user, onClose, onEdit }) => {
                             className="w-full border p-2 rounded"
                         />
                     </div>
+                    {/* Conditionally render studentId input if the user is a student */}
+                    {user.role === 'student' && (
+                        <div className="mb-4">
+                            <label className="block text-gray-700">Student ID</label>
+                            <input
+                                type="text"
+                                name="studentId"
+                                value={formData.studentId}
+                                onChange={handleInputChange}
+                                className="w-full border p-2 rounded"
+                            />
+                        </div>
+                    )}
                 </form>
                 <div className="mt-4 flex justify-end gap-2">
                     <button

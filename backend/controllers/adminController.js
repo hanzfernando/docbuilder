@@ -4,12 +4,12 @@ import Organization from '../models/organizationModel.js';
 // Admin: Create User Account
 const createUserAccount = async (req, res) => {
     try {
-        const { firstname, lastname, email, password, role, organization } = req.body;
-
+        const { firstname, lastname, email, password, role, organization, studentId } = req.body;
+        console.log(req.body);
         // Validate required fields
-        if (!firstname || !lastname || !email || !password || !role || !organization) {
+        if (!firstname || !lastname || !email || !password || !role) {
             return res.status(400).json({
-                message: 'All fields are required: firstname, lastname, email, password, role, organization',
+                message: 'All fields are required: firstname, lastname, email, password, role',
             });
         }
 
@@ -21,10 +21,12 @@ const createUserAccount = async (req, res) => {
             });
         }
 
-        // Check if the organization exists for role assignment
-        const orgExists = await Organization.findById(organization);
-        if (!orgExists) {
-            return res.status(404).json({ message: 'Organization not found' });
+        // Check if the organization exists for role assignment (if applicable)
+        if (role !== 'student') {
+            const orgExists = await Organization.findById(organization);
+            if (!orgExists) {
+                return res.status(404).json({ message: 'Organization not found' });
+            }
         }
 
         // Check for duplicate email
@@ -33,29 +35,34 @@ const createUserAccount = async (req, res) => {
             return res.status(400).json({ message: 'User with this email already exists' });
         }
 
-        // Create the user
-        const newUser = await User.signup(
+        const userPayload = {
             firstname,
             lastname,
             email,
             password,
             role,
-            organization
-        );
+            organization,
+        };
 
-        // Populate organization for the response
-        const populatedUser = await User.findById(newUser._id).populate('organization', 'name');
+        // Add `studentId` only for students
+        if (role === 'student') {
+            userPayload.studentId = studentId;
+        }
+
+        // Create the user
+        const newUser = await User.create(userPayload);
 
         // Response
         res.status(201).json({
             message: 'User account created successfully',
             user: {
-                _id: populatedUser._id, // Ensure _id is included
-                firstname: populatedUser.firstname,
-                lastname: populatedUser.lastname,
-                email: populatedUser.email,
-                role: populatedUser.role,
-                organization: populatedUser.organization?.name || null, // Ensure null for superadmin
+                _id: newUser._id,
+                firstname: newUser.firstname,
+                lastname: newUser.lastname,
+                email: newUser.email,
+                role: newUser.role,
+                studentId: newUser.studentId || null,
+                organization: newUser.organization || null,
             },
         });
     } catch (error) {
@@ -63,6 +70,8 @@ const createUserAccount = async (req, res) => {
         res.status(500).json({ message: 'Failed to create user account', error: error.message });
     }
 };
+
+
 
 
 const getUsers = async (req, res) => {
@@ -101,14 +110,11 @@ const getUsers = async (req, res) => {
 
 // Edit User Account
 const editUserAccount = async (req, res) => {
-    const { id } = req.params; // User account ID
-    const { firstname, lastname, email, password, organization, role } = req.body;
-
+    const { id } = req.params;
+    const { firstname, lastname, email, password, organization, role, studentId } = req.body;
+    console.log(req.body);
     try {
         if (!id) throw new Error('User account ID is required');
-        if (!firstname && !lastname && !email && !password && !organization && !role) {
-            throw new Error('At least one field is required to update');
-        }
 
         const updateData = {};
 
@@ -119,19 +125,31 @@ const editUserAccount = async (req, res) => {
         if (organization) updateData.organization = organization;
         if (role) updateData.role = role;
 
+        // Conditionally handle `studentId`
+        if (role === 'student') {
+            updateData.studentId = studentId || null; // Include studentId only if role is student
+        } else {
+            updateData.studentId = undefined; // Remove studentId for non-students
+        }
+
         const updatedUser = await User.findByIdAndUpdate(
             id,
             { $set: updateData },
             { new: true, runValidators: true }
-        ).populate('organization', 'name');
+        );
 
         if (!updatedUser) throw new Error('User account not found');
 
-        res.status(200).json({ message: 'User account updated successfully', user: updatedUser });
+        res.status(200).json({
+            message: 'User account updated successfully',
+            user: updatedUser,
+        });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 };
+
+
 
 // Delete User Account
 const deleteUserAccount = async (req, res) => {

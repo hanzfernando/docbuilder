@@ -13,7 +13,9 @@ const ViewTemplateContainer = () => {
     const [documentSubtype, setDocumentSubtype] = useState('');
     const [requiredRole, setRequiredRole] = useState('student');
     const [paperSize, setPaperSize] = useState('letter');
-
+    const [isDataLoaded, setIsDataLoaded] = useState(false);
+    const [margins, setMargins] = useState({ top: 1, right: 1, bottom: 1, left: 1 });
+    
     const DPI = 96; // Fixed DPI for page dimensions
     const pageSizes = {
         letter: { width: DPI * 8.5, height: DPI * 11 },
@@ -24,48 +26,66 @@ const ViewTemplateContainer = () => {
     const selectedPageSize = pageSizes[paperSize];
 
     const sharedStyles = `
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
+    @import url('https://fonts.googleapis.com/css2?family=Century+Gothic&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Palatino+Linotype&display=swap');
+            
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
 
-        .page, .mce-content-body {
-            width: ${selectedPageSize.width}px;
-            min-height: ${selectedPageSize.height - 100}px;
-            max-height: ${selectedPageSize.height - 100}px;
-            padding: ${DPI}px;
-            margin: 2.6rem auto;
-            background-color: white;
-            border: 1px solid #ddd;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            font-size: 12pt;
-            line-height: 1.15;
-        }
+    .non-editable {
+        /* Styles for non-editable elements */
+    }
 
-        .mce-content-body p {
-            margin: 0;
-            margin-bottom: 8pt;
-        }
+    .editable {
+        background-color: #fffbe6;
+        border: 1px dashed #ffa000;
+        padding: 2px;
+    }
 
-        @page {
-            size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
-            margin: 1in 1in 0in 1in;
-        }
+    .editable:hover {
+        border-color: #ff6f00;
+        background-color: #fff3e0;
+    }
 
-        @media print {
-            .page, .mce-content-body {
-                overflow-wrap: break-word;
-                padding: 0;
-                margin: 0 auto;
-                box-shadow: none;
-                border: none;
-                width: ${selectedPageSize.width}px;
-                min-height: ${selectedPageSize.height}px;
-                pagebreak-after: always;
-            }
-        }
-    `;
+    .header, .footer {
+        max-height: ${DPI}px;
+        position: relative; /* Ensure it doesn't interfere with other content flow */
+        margin: -0.75in -0.75in 0; /* Negative margin to offset the default margin */
+        overflow: hidden; /* Ensure no content spills over */
+    }
+
+    .footer {
+        margin: -0.70in -0.70in; /* Adjust for the footer */
+    }
+
+    .header img, .footer img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .page, .mce-content-body {
+        width: ${selectedPageSize.width / DPI}in;
+        min-height: ${(selectedPageSize.height / DPI) + 1}in;
+        max-height: ${(selectedPageSize.height / DPI) +1}in;
+        padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
+        box-sizing: border-box;
+        margin: 2.6rem auto;
+        background-color: white;
+        border: 1px solid #ddd;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        font-size: 12pt;
+        line-height: 1.15;
+    }
+
+    .mce-content-body p {
+        margin: 0;
+        margin-bottom: 8pt;
+    }
+`;
 
     useEffect(() => {
         if (id) {
@@ -73,17 +93,32 @@ const ViewTemplateContainer = () => {
                 try {
                     const token = getToken();
                     const templateData = await getTemplateById(id, token);
+
                     setDocumentName(templateData.name);
                     setDocumentType(templateData.type);
                     setDocumentSubtype(templateData.subtype || '');
                     setRequiredRole(templateData.requiredRole);
                     setPaperSize(templateData.paperSize);
+
+                    if (templateData?.margins) { // Check if margins exist
+                        console.log(1);
+                        const { top, bottom, left, right } = templateData.margins;
+                        setMargins({
+                            top:top ,
+                            bottom: bottom,
+                            left: left ,
+                            right: right,
+                        });
+                    }
+
                     setPages(
                         templateData.content.split('<hr style="page-break-after: always;">').map((content, index) => ({
                             id: index + 1,
                             content,
                         }))
                     );
+
+                    setIsDataLoaded(true);
                 } catch (error) {
                     console.error('Error loading template:', error.message);
                     alert('Failed to load template. Please try again.');
@@ -146,7 +181,7 @@ const ViewTemplateContainer = () => {
             </div>
 
             {/* Editor */}
-            {pages.map((page) => (
+            {isDataLoaded ? pages.map((page) => (
                 <div key={page.id} style={{ display: currentPage === page.id ? 'block' : 'none' }}>
                     <Editor
                         apiKey="0u9umuem86bbky3tbhbd94u9ebh6ocdmhar9om8kgfqiffmz"
@@ -160,7 +195,9 @@ const ViewTemplateContainer = () => {
                         }}
                     />
                 </div>
-            ))}
+            )): (
+                <p>Loading editor...</p>
+            )}
         </div>
     );
 };
