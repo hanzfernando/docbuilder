@@ -78,10 +78,11 @@ const TemplateContainer = () => {
         background-color: #fff3e0;
     }
 
+
     .header, .footer {
         max-height: ${DPI - DPI/3}px;
         position: relative; /* Ensure it doesn't interfere with other content flow */
-        margin: -${margins.top - 0.25}in -${margins.right - 0.25}in 0 -${margins.left - 0.25}in;
+        margin: -${margins.top}in -${margins.right}in 0 -${margins.left}in;
         overflow: hidden; /* Ensure no content spills over */
     }
 
@@ -95,7 +96,27 @@ const TemplateContainer = () => {
         display: block;
     }
 
+    .draggable-image {
+        border: 1px dashed #ccc;
+        padding: 4px;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: inline-block;
+        position: absolute; /* To support dragging */
+        cursor: move; /* Indicates draggable */
+        resize: both; /* Enable resizing */
+        overflow: hidden; /* Prevent content overflow during resizing */
+    }
+
+    .draggable-image img {
+        width: 100%; /* Ensure image scales with container */
+        height: 100%; /* Maintain aspect ratio */
+        display: block;
+    }
+
+
+
     .page, .mce-content-body {
+        position: relative;
         width: ${selectedPageSize.width / DPI}in;
         min-height: ${(selectedPageSize.height / DPI) + 1}in;
         max-height: ${(selectedPageSize.height / DPI) + 1}in;
@@ -136,13 +157,30 @@ const TemplateContainer = () => {
         }
 
         
-           
+        .draggable-image {
+            border: 1px dashed #ccc;
+            padding: 4px;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: inline-block;
+            position: absolute; /* To support dragging */
+            cursor: move; /* Indicates draggable */
+            resize: both; /* Enable free resizing */
+            overflow: hidden; /* Prevent content overflow during resizing */
+        }
+
+        .draggable-image img {
+            width: 100%; /* Ensure image scales with container */
+            height: auto; /* Maintain aspect ratio */
+            display: block;
+        }
+
             
         @page {
             size: ${selectedPageSize.width / DPI}in ${selectedPageSize.height / DPI}in;
         }
 
         body {
+
             margin: 0;
             padding: 0;
         }
@@ -474,7 +512,28 @@ const TemplateContainer = () => {
     };
     
     
+    const addDraggableImage = (editor, file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const uniqueId = `draggable-${Date.now()}`;
+            const imageHtml = `
+                <div
+                    id="${uniqueId}"
+                    class="draggable-image"
+                    style="position: absolute; top: 50px; left: 50px; cursor: move; z-index: 1000;"
+                    contenteditable="false"
+                >
+                    <img src="${reader.result}" alt="Draggable Image" style="max-width: 100%; max-height: 100%;" />
+                </div>
+            `;
+            editor.insertContent(imageHtml);
+        };
+        reader.readAsDataURL(file);
+    };
     
+    
+    
+
     
     
     
@@ -687,7 +746,7 @@ const TemplateContainer = () => {
                                         'media', 'table', 'emoticons', 'help', 'print',
                                     ],
                                     toolbar:
-                                        'undo redo | styles | bold italic underline | fontsize fontfamily addImage addHeaderImage addFooterImage| markEditable removeEditable | lineheight pagebreak| ' +
+                                        'undo redo | styles | bold italic underline | fontsize fontfamily addImage addDraggableImage | addHeaderImage addFooterImage| markEditable removeEditable | lineheight pagebreak| ' +
                                         'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | addHangingIndent removeHangingIndent | ' +
                                         'link image | fullscreen | forecolor backcolor emoticons | help',
                                     fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',
@@ -713,6 +772,103 @@ const TemplateContainer = () => {
                                         "Verdana=verdana,geneva; ",
                                     content_style: sharedStyles,
                                     setup: (editor) => {
+
+                                        // editor.on('init', () => {
+                                        //     const iframe = editor.getDoc(); // Access the iframe's document
+                                        //     iframe.addEventListener('mousedown', (e) => {
+                                        //         const target = e.target.closest('.draggable-image');
+                                        //         if (!target) return;
+                                    
+                                        //         let offsetX = e.clientX - target.offsetLeft;
+                                        //         let offsetY = e.clientY - target.offsetTop;
+                                    
+                                        //         const onMouseMove = (event) => {
+                                        //             target.style.left = `${event.clientX - offsetX}px`;
+                                        //             target.style.top = `${event.clientY - offsetY}px`;
+                                        //         };
+                                    
+                                        //         const onMouseUp = () => {
+                                        //             iframe.removeEventListener('mousemove', onMouseMove);
+                                        //             iframe.removeEventListener('mouseup', onMouseUp);
+                                        //             console.log(target);
+                                        //         };
+
+                                        //         console.log(target);
+                                    
+                                        //         iframe.addEventListener('mousemove', onMouseMove);
+                                        //         iframe.addEventListener('mouseup', onMouseUp);
+                                        //     });
+                                        // });
+                                        
+                                        editor.on('init', () => {
+                                            const iframeDoc = editor.getDoc(); // Access TinyMCE's iframe document
+                                        
+                                            iframeDoc.addEventListener('mousedown', (e) => {
+                                                const target = e.target.closest('.draggable-image');
+                                                if (!target) return;
+                                        
+                                                let offsetX = e.clientX - target.offsetLeft;
+                                                let offsetY = e.clientY - target.offsetTop;
+                                        
+                                                const onMouseMove = (event) => {
+                                                    target.style.left = `${event.clientX - offsetX}px`;
+                                                    target.style.top = `${event.clientY - offsetY}px`;
+                                                };
+                                        
+                                                const onMouseUp = () => {
+                                                    iframeDoc.removeEventListener('mousemove', onMouseMove);
+                                                    iframeDoc.removeEventListener('mouseup', onMouseUp);
+                                        
+                                                    // Update TinyMCE's content
+                                                    const uniqueId = target.getAttribute('id');
+                                                    if (uniqueId) {
+                                                        const tinyTarget = editor.dom.get(uniqueId);
+                                                        editor.dom.setStyles(tinyTarget, {
+                                                            left: target.style.left,
+                                                            top: target.style.top,
+                                                        });
+                                        
+                                                        // Synchronize TinyMCE content
+                                                        const updatedContent = editor.getContent();
+                                                        editor.setContent(updatedContent);
+                                        
+                                                        // Trigger TinyMCE's change event to ensure synchronization
+                                                        editor.undoManager.add();
+                                                        editor.fire('change');
+                                                        console.log(editor.getContent()); // Verify updated content
+                                                    } else {
+                                                        console.warn('Draggable image has no ID. Ensure unique IDs are assigned.');
+                                                    }
+                                                };
+                                        
+                                                iframeDoc.addEventListener('mousemove', onMouseMove);
+                                                iframeDoc.addEventListener('mouseup', onMouseUp);
+                                            });
+                                        });
+                                        
+                                        
+                                        
+                                        editor.ui.registry.addButton('addDraggableImage', {
+                                            text: 'Insert Draggable Image',
+                                            icon: 'image',
+                                            onAction: () => {
+                                                const input = document.createElement('input');
+                                                input.type = 'file';
+                                                input.accept = 'image/*';
+                                                input.onchange = async () => {
+                                                    const file = input.files[0];
+                                                    if (file) {
+                                                        try {
+                                                            addDraggableImage(editor, file);
+                                                        } catch (error) {
+                                                            console.error('Error adding draggable image:', error.message);
+                                                            alert('Failed to add image. Please try again.');
+                                                        }
+                                                    }
+                                                };
+                                                input.click();
+                                            },
+                                        });
                                         
                                         editor.on('keydown', (event) => {
                                             if (event.key === 'Tab') {
