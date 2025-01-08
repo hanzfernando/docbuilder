@@ -517,19 +517,19 @@ const TemplateContainer = () => {
         reader.onload = () => {
             const uniqueId = `draggable-${Date.now()}`;
             const imageHtml = `
-                <div
+                <img
                     id="${uniqueId}"
+                    src="${reader.result}"
+                    alt="Draggable Image"
                     class="draggable-image"
-                    style="position: absolute; top: 50px; left: 50px; cursor: move; z-index: 1000;"
-                    contenteditable="false"
-                >
-                    <img src="${reader.result}" alt="Draggable Image" style="max-width: 100%; max-height: 100%;" />
-                </div>
+                    style="position: absolute; top: 50px; left: 50px; display: block; cursor: move; z-index: 1000;"
+                />
             `;
             editor.insertContent(imageHtml);
         };
         reader.readAsDataURL(file);
     };
+    
     
     
     
@@ -749,6 +749,7 @@ const TemplateContainer = () => {
                                         'undo redo | styles | bold italic underline | fontsize fontfamily addImage addDraggableImage | addHeaderImage addFooterImage| markEditable removeEditable | lineheight pagebreak| ' +
                                         'alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | addHangingIndent removeHangingIndent | ' +
                                         'link image | fullscreen | forecolor backcolor emoticons | help',
+                                    object_resizing: 'img',
                                     fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',
                                     line_height_formats: '1 1.1 1.15 1.2 1.3 1.5 2',
                                     font_family_formats:
@@ -799,6 +800,10 @@ const TemplateContainer = () => {
                                         //         iframe.addEventListener('mouseup', onMouseUp);
                                         //     });
                                         // });
+                                        editor.on('drop', (event) => {
+                                            event.preventDefault(); // Prevent TinyMCE's default drop handling
+                                            event.stopPropagation(); // Stop propagation of the event to prevent other handlers
+                                        });
                                         
                                         editor.on('init', () => {
                                             const iframeDoc = editor.getDoc(); // Access TinyMCE's iframe document
