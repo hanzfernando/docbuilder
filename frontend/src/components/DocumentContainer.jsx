@@ -94,6 +94,7 @@ const DocumentContainer = () => {
     }
 
     .page, .mce-content-body {
+        position: relative;
         width: ${selectedPageSize.width / DPI}in;
         min-height: ${(selectedPageSize.height / DPI) + 1}in;
         max-height: ${(selectedPageSize.height / DPI) + 1}in;
@@ -105,6 +106,23 @@ const DocumentContainer = () => {
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         font-size: 12pt;
         line-height: 1.15;
+    }
+
+    .draggable-image {
+        border: 1px dashed #ccc;
+        padding: 4px;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: inline-block;
+        position: absolute; /* To support dragging */
+        cursor: move; /* Indicates draggable */
+        resize: both; /* Enable resizing */
+        overflow: hidden; /* Prevent content overflow during resizing */
+    }
+
+    .draggable-image img {
+        width: 100%; /* Ensure image scales with container */
+        height: 100%; /* Maintain aspect ratio */
+        display: block;
     }
 
     .mce-content-body p {
@@ -460,6 +478,28 @@ const DocumentContainer = () => {
         });
     };
 
+    const addDraggableImage = (editor, file) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const uniqueId = `draggable-${Date.now()}`;
+            const imageHtml = `
+                <img
+                    id="${uniqueId}"
+                    src="${reader.result}"
+                    alt="Draggable Image"
+                    class="draggable-image"
+                    style="position: absolute; top: 50px; left: 50px; display: block; cursor: move; z-index: 1000;"
+                />
+            `;
+            editor.insertContent(imageHtml);
+        };
+        reader.readAsDataURL(file);
+    };
+
+
+
+
+
     return (
         <div className="p-4">
             <h1 className="text-2xl font-bold mb-4">{isUpdateMode ? 'Edit Document' : 'Create New Document'}</h1>
@@ -532,11 +572,86 @@ const DocumentContainer = () => {
                                 toolbar:
                                     'undo redo | formatselect | bold italic backcolor | ' +
                                     'alignleft aligncenter alignright alignjustify | ' +
-                                    'bullist numlist outdent indent | addHangingIndent removeHangingIndent | addImage addHeaderImage addFooterImage | help',
+                                    'bullist numlist outdent indent | addDraggableImage | addHangingIndent removeHangingIndent | addImage addHeaderImage addFooterImage | help',
                                 content_style: sharedStyles,
                                 readonly: 1,
                                 browser_spellcheck: true,
                                 setup: (editor) => {
+
+                                    editor.on('drop', (event) => {
+                                        event.preventDefault(); // Prevent TinyMCE's default drop handling
+                                        event.stopPropagation(); // Stop propagation of the event to prevent other handlers
+                                    });
+                                    
+                                    editor.on('init', () => {
+                                        const iframeDoc = editor.getDoc(); // Access TinyMCE's iframe document
+                                    
+                                        iframeDoc.addEventListener('mousedown', (e) => {
+                                            const target = e.target.closest('.draggable-image');
+                                            if (!target) return;
+                                    
+                                            let offsetX = e.clientX - target.offsetLeft;
+                                            let offsetY = e.clientY - target.offsetTop;
+                                    
+                                            const onMouseMove = (event) => {
+                                                target.style.left = `${event.clientX - offsetX}px`;
+                                                target.style.top = `${event.clientY - offsetY}px`;
+                                            };
+                                    
+                                            const onMouseUp = () => {
+                                                iframeDoc.removeEventListener('mousemove', onMouseMove);
+                                                iframeDoc.removeEventListener('mouseup', onMouseUp);
+                                    
+                                                // Update TinyMCE's content
+                                                const uniqueId = target.getAttribute('id');
+                                                if (uniqueId) {
+                                                    const tinyTarget = editor.dom.get(uniqueId);
+                                                    editor.dom.setStyles(tinyTarget, {
+                                                        left: target.style.left,
+                                                        top: target.style.top,
+                                                    });
+                                    
+                                                    // Synchronize TinyMCE content
+                                                    const updatedContent = editor.getContent();
+                                                    editor.setContent(updatedContent);
+                                    
+                                                    // Trigger TinyMCE's change event to ensure synchronization
+                                                    editor.undoManager.add();
+                                                    editor.fire('change');
+                                                    console.log(editor.getContent()); // Verify updated content
+                                                } else {
+                                                    console.warn('Draggable image has no ID. Ensure unique IDs are assigned.');
+                                                }
+                                            };
+                                    
+                                            iframeDoc.addEventListener('mousemove', onMouseMove);
+                                            iframeDoc.addEventListener('mouseup', onMouseUp);
+                                        });
+                                    });
+                                    
+                                    
+                                    
+                                    editor.ui.registry.addButton('addDraggableImage', {
+                                        text: 'Insert Draggable Image',
+                                        icon: 'image',
+                                        onAction: () => {
+                                            const input = document.createElement('input');
+                                            input.type = 'file';
+                                            input.accept = 'image/*';
+                                            input.onchange = async () => {
+                                                const file = input.files[0];
+                                                if (file) {
+                                                    try {
+                                                        addDraggableImage(editor, file);
+                                                    } catch (error) {
+                                                        console.error('Error adding draggable image:', error.message);
+                                                        alert('Failed to add image. Please try again.');
+                                                    }
+                                                }
+                                            };
+                                            input.click();
+                                        },
+                                    });
 
                                     editor.on('keydown', (event) => {
                                         if (event.key === 'Tab') {

@@ -26,9 +26,26 @@ const ViewTemplateContainer = () => {
     const selectedPageSize = pageSizes[paperSize];
 
     const sharedStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Century+Gothic&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=Palatino+Linotype&display=swap');
-            
+    @font-face {
+            font-family: 'Century Gothic';
+            src: local('Century Gothic'), /* Uses installed font on the system */
+                url('/fonts/CenturyGothic.woff2') format('woff2'),
+                url('/fonts/CenturyGothic.woff') format('woff'),
+                url('/fonts/CenturyGothic.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+    }
+
+    @font-face {
+        font-family: 'Palatino Linotype';
+        src: local('Palatino Linotype'), /* Uses installed font on the system */
+            url('/fonts/PalatinoLinotype.woff2') format('woff2'),
+            url('/fonts/PalatinoLinotype.woff') format('woff'),
+            url('/fonts/PalatinoLinotype.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+        
     body {
         font-family: Arial, sans-serif;
         margin: 0;
@@ -50,10 +67,11 @@ const ViewTemplateContainer = () => {
         background-color: #fff3e0;
     }
 
+
     .header, .footer {
-        max-height: ${DPI}px;
+        max-height: ${DPI - DPI/3}px;
         position: relative; /* Ensure it doesn't interfere with other content flow */
-        margin: -0.75in -0.75in 0; /* Negative margin to offset the default margin */
+        margin: -${margins.top}in -${margins.right}in 0 -${margins.left}in;
         overflow: hidden; /* Ensure no content spills over */
     }
 
@@ -67,11 +85,31 @@ const ViewTemplateContainer = () => {
         display: block;
     }
 
+    .draggable-image {
+        border: 1px dashed #ccc;
+        padding: 4px;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: inline-block;
+        position: absolute; /* To support dragging */
+        cursor: move; /* Indicates draggable */
+        resize: both; /* Enable resizing */
+        overflow: hidden; /* Prevent content overflow during resizing */
+    }
+
+    .draggable-image img {
+        width: 100%; /* Ensure image scales with container */
+        height: 100%; /* Maintain aspect ratio */
+        display: block;
+    }
+
+
+
     .page, .mce-content-body {
+        position: relative;
         width: ${selectedPageSize.width / DPI}in;
         min-height: ${(selectedPageSize.height / DPI) + 1}in;
-        max-height: ${(selectedPageSize.height / DPI) +1}in;
-        padding: ${margins.top}in ${margins.right}in ${margins.bottom}in ${margins.left}in;
+        max-height: ${(selectedPageSize.height / DPI) + 1}in;
+        padding: ${DPI * margins.top}px ${DPI * margins.right}px ${DPI * margins.bottom}px ${DPI * margins.left}px;
         box-sizing: border-box;
         margin: 2.6rem auto;
         background-color: white;

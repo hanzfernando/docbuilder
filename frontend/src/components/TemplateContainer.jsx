@@ -2,21 +2,28 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Editor } from '@tinymce/tinymce-react';
 import { getToken } from '../utils/authUtil.js';
-import { createTemplate, getTemplateById, updateTemplate } from '../services/templateService.js';
+import { createTemplate, getTemplateById, updateTemplate, fetchDecisionTree } from '../services/templateService.js';
 import imageCompression from 'browser-image-compression';
 
 const TemplateContainer = () => {
     const { id } = useParams(); // Fetch ID from the URL if available
     const [pages, setPages] = useState([{ id: 1, content: '' }]);
     const [currentPage, setCurrentPage] = useState(1);
-    const [documentName, setDocumentName] = useState('');
-    const [documentType, setDocumentType] = useState('');
-    const [documentSubtype, setDocumentSubtype] = useState('');
+    
     const [requiredRole, setRequiredRole] = useState('student');
     const [paperSize, setPaperSize] = useState('letter');
     const [strictMode, setStrictMode] = useState(false); // Strict mode toggle
     const [editorLoaded, setEditorLoaded] = useState(false);
     const [isUpdateMode, setIsUpdateMode] = useState(false);
+
+    const [documentName, setDocumentName] = useState('');
+    const [decisionTree, setDecisionTree] = useState({});
+    const [documentType, setDocumentType] = useState('');
+    const [documentSubtype, setDocumentSubtype] = useState('');
+    const [customType, setCustomType] = useState('');
+    const [customSubtype, setCustomSubtype] = useState('');
+    const [isCustomType, setIsCustomType] = useState(false);
+    const [subtypeOptions, setSubtypeOptions] = useState([]);
     const navigate = useNavigate();
 
     const DPI = 96; // Fixed DPI for page dimensions
@@ -226,6 +233,37 @@ const TemplateContainer = () => {
         }
     `;
 
+    useEffect(() => {
+        const loadDecisionTree = async () => {
+            try {
+                const token = getToken();
+                const tree = await fetchDecisionTree(token);
+                setDecisionTree(tree);
+            } catch (error) {
+                console.error('Error fetching decision tree:', error.message);
+                alert('Failed to fetch decision tree. Please try again.');
+            }
+        };
+
+        loadDecisionTree();
+    }, []);
+
+    // const handleTypeChange = (e) => {
+    //     const selectedType = e.target.value;
+    //     setDocumentType(selectedType);
+    //     setDocumentSubtype(''); // Reset subtype when type changes
+
+    //     if (selectedType === 'custom') {
+    //         setIsCustomType(true);
+    //     } else {
+    //         setIsCustomType(false);
+    //         setSubtypeOptions(Object.keys(decisionTree[selectedType]?.subtype || {}));
+    //     }
+    // };
+
+    // const handleSubtypeChange = (e) => {
+    //     setDocumentSubtype(e.target.value);
+    // };
 
     useEffect(() => {
         if (id) {
@@ -563,31 +601,71 @@ const TemplateContainer = () => {
                     required
                 />
                 <label className="block text-gray-700 font-medium mb-2">Document Type:</label>
-                <input
-                    type="text"
-                    value={documentType}
-                    onChange={(e) => setDocumentType(e.target.value)}
-                    placeholder="Enter document type (e.g., Proposal, Report)"
+                <select
+                    value={isCustomType ? 'custom' : documentType}
+                    onChange={(e) => {
+                        const selectedType = e.target.value;
+                        setDocumentType(selectedType);
+                        setDocumentSubtype(''); // Reset subtype when type changes
+                        if (selectedType === 'custom') {
+                            setIsCustomType(true);
+                        } else {
+                            setIsCustomType(false);
+                            setSubtypeOptions(Object.keys(decisionTree[selectedType]?.subtype || {}));
+                        }
+                    }}
                     className="w-full border rounded p-2 mb-4"
-                    required
-                    // disabled={editorLoaded} // Lock field once template creation begins
-                />
+                >
+                    <option value="">Select Type</option>
+                    {Object.keys(decisionTree).map((type) => (
+                        <option key={type} value={type}>
+                            {type}
+                        </option>
+                    ))}
+                    <option value="custom">Add Custom Type</option>
+                </select>
+                {isCustomType && (
+                    <div>
+                        <label className="block text-gray-700 font-medium mb-2">Custom Type:</label>
+                        <input
+                            type="text"
+                            value={customType}
+                            onChange={(e) => setCustomType(e.target.value)}
+                            placeholder="Enter custom type"
+                            className="w-full border rounded p-2 mb-4"
+                        />
+                    </div>
+                )}
                 <label className="block text-gray-700 font-medium mb-2">Document Subtype:</label>
-                <input
-                    type="text"
-                    value={documentSubtype}
-                    onChange={(e) => setDocumentSubtype(e.target.value)}
-                    placeholder="Enter document subtype (optional)"
-                    className="w-full border rounded p-2 mb-4"
-                    // disabled={editorLoaded} // Lock field once template creation begins
-                />
+                {isCustomType ? (
+                    <input
+                        type="text"
+                        value={customSubtype}
+                        onChange={(e) => setCustomSubtype(e.target.value)}
+                        placeholder="Enter custom subtype"
+                        className="w-full border rounded p-2 mb-4"
+                    />
+                ) : (
+                    <select
+                        value={documentSubtype}
+                        onChange={(e) => setDocumentSubtype(e.target.value)}
+                        className="w-full border rounded p-2 mb-4"
+                        disabled={!subtypeOptions.length}
+                    >
+                        <option value="">Select Subtype</option>
+                        {subtypeOptions.map((subtype) => (
+                            <option key={subtype} value={subtype}>
+                                {subtype}
+                            </option>
+                        ))}
+                    </select>
+                )}
                 <label className="block text-gray-700 font-medium mb-2">Template For:</label>
                 <select
                     value={requiredRole}
                     onChange={(e) => setRequiredRole(e.target.value)}
                     className="border rounded p-2 mb-4"
                     required
-                    // disabled={editorLoaded} // Lock field once template creation begins
                 >
                     <option value="">Select Role</option>
                     <option value="student">Student</option>
@@ -599,14 +677,13 @@ const TemplateContainer = () => {
                     checked={strictMode}
                     onChange={toggleStrictMode}
                     className="mr-2"
-                    // disabled={editorLoaded} // Lock toggle once template creation begins
                 />
                 Enable strict mode
                 <label className="block text-gray-700 font-medium mb-2">Paper Size:</label>
                 <select
                     value={paperSize}
                     onChange={(e) => setPaperSize(e.target.value)}
-                    disabled={editorLoaded} // Lock field once template creation begins
+                    disabled={editorLoaded}
                     className="border rounded p-2 mb-4"
                     required
                 >
@@ -627,7 +704,6 @@ const TemplateContainer = () => {
                             value={margins.top}
                             onChange={handleMarginChange}
                             className="w-full border rounded p-2 mb-4"
-                            // disabled={editorLoaded} // Lock field once template creation begins
                         />
                     </div>
                     <div>
@@ -639,7 +715,6 @@ const TemplateContainer = () => {
                             value={margins.bottom}
                             onChange={handleMarginChange}
                             className="w-full border rounded p-2 mb-4"
-                            // disabled={editorLoaded} // Lock field once template creation begins
                         />
                     </div>
                     <div>
@@ -651,7 +726,6 @@ const TemplateContainer = () => {
                             value={margins.left}
                             onChange={handleMarginChange}
                             className="w-full border rounded p-2 mb-4"
-                            // disabled={editorLoaded} // Lock field once template creation begins
                         />
                     </div>
                     <div>
@@ -663,21 +737,19 @@ const TemplateContainer = () => {
                             value={margins.right}
                             onChange={handleMarginChange}
                             className="w-full border rounded p-2 mb-4"
-                            // disabled={editorLoaded} // Lock field once template creation begins
                         />
                     </div>
                 </div>
 
                 <button
                     onClick={() => {
-                        // Validate all required fields before starting template creation
-                        if (!documentName || !documentType || !requiredRole || !paperSize) {
+                        if (!documentName || (!documentType && !customType) || !requiredRole || !paperSize) {
                             alert('Please fill in all required fields before starting template creation.');
                             return;
                         }
                         setEditorLoaded(true); // Allow template creation to begin
                     }}
-                    disabled={editorLoaded} // Prevent multiple clicks
+                    disabled={editorLoaded}
                     className={`bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700 ${
                         editorLoaded ? 'hidden' : ''
                     }`}
@@ -685,6 +757,7 @@ const TemplateContainer = () => {
                     Begin Template Creation
                 </button>
             </div>
+
 
 
 

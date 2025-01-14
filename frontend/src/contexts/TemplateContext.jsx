@@ -1,6 +1,6 @@
 import { createContext, useReducer, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { fetchTemplates } from '../services/templateService';
+import { fetchTemplates, fetchActiveTemplates } from '../services/templateService';
 import { getToken } from '../utils/authUtil';
 import { useAuthContext } from '../hooks/useAuthContext';
 // Initial state for templates
@@ -27,8 +27,22 @@ const templateReducer = (state, action) => {
         case 'DELETE_TEMPLATE':
             return {
                 ...state,
-                templates: state.templates.filter((template) => template._id !== action.payload),
+                templates: state.templates.map((template) =>
+                    template._id === action.payload
+                        ? { ...template, status: 'inactive' } // Update status to inactive
+                        : template
+                ),
             };
+        case 'RECOVER_TEMPLATE':
+            return {
+                ...state,
+                templates: state.templates.map((template) =>
+                    template._id === action.payload._id
+                        ? { ...template, status: 'active' }
+                        : template
+                ),
+            };
+                     
         case 'SET_LOADING':
             return { ...state, loading: action.payload };
         case 'SET_ERROR':
@@ -65,7 +79,12 @@ const TemplateProvider = ({ children }) => {
 
                 try {
                     const token = getToken(); // Get the token from your auth utility
-                    const templates = await fetchTemplates(token);
+                    var templates = [];
+                    if(user.role === 'admin') {
+                        templates = await fetchTemplates(token);
+                    } else {
+                        templates = await fetchActiveTemplates(token);
+                    }                   
                     dispatch({ type: 'SET_TEMPLATES', payload: templates });
                 } catch (error) {
                     dispatch({ type: 'SET_ERROR', payload: error.message });

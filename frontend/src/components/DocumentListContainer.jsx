@@ -12,8 +12,9 @@ const DocumentListContainer = () => {
     const navigate = useNavigate();
     const [selectedDocument, setSelectedDocument] = useState(null); // Track the selected document for deletion
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState(''); // Search query state
+    const [sortOption, setSortOption] = useState('name-asc'); // Sort option state
 
-    console.log(documents);
     useEffect(() => {
         const loadDocuments = async () => {
             dispatch({ type: 'SET_LOADING', payload: true });
@@ -34,7 +35,6 @@ const DocumentListContainer = () => {
 
     const handleDeleteDocument = async (documentId) => {
         try {
-            console.log('Deleting document:', documentId);
             const token = getToken();
             await deleteDocument(documentId, token);
             dispatch({ type: 'DELETE_DOCUMENT', payload: documentId });
@@ -50,17 +50,61 @@ const DocumentListContainer = () => {
         setIsModalOpen(true);
     };
 
+    // Filter documents by search query
+    const filteredDocuments = documents.filter((document) =>
+        document.title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // Sort documents based on selected option
+    const sortedDocuments = [...filteredDocuments].sort((a, b) => {
+        switch (sortOption) {
+            case 'name-asc':
+                return a.title.localeCompare(b.title);
+            case 'name-desc':
+                return b.title.localeCompare(a.title);
+            case 'date-asc':
+                return new Date(a.createdAt) - new Date(b.createdAt);
+            case 'date-desc':
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            default:
+                return 0;
+        }
+    });
+
     if (loading) return <p>Loading documents...</p>;
     if (error) return <p className="text-red-500">{error}</p>;
 
     return (
         <div className="p-4">
             <h2 className="text-2xl font-bold mb-4">Your Documents</h2>
-            {documents.length === 0 ? (
-                <p>No documents available. Create your first document!</p>
+
+            {/* Search and Sort */}
+            <div className="mb-4 flex gap-4">
+                <input
+                    type="text"
+                    placeholder="Search documents by title..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="border rounded w-full p-2 shadow"
+                />
+                <select
+                    value={sortOption}
+                    onChange={(e) => setSortOption(e.target.value)}
+                    className="border rounded p-2 shadow bg-white"
+                >
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="date-asc">Date (Oldest First)</option>
+                    <option value="date-desc">Date (Newest First)</option>
+                </select>
+            </div>
+
+            {/* Documents List */}
+            {sortedDocuments.length === 0 ? (
+                <p>No documents match your search criteria.</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {documents.map((document) => (
+                    {sortedDocuments.map((document) => (
                         <div
                             key={document._id}
                             className="border rounded p-4 shadow hover:shadow-lg transition-shadow duration-300 bg-white"
@@ -87,6 +131,8 @@ const DocumentListContainer = () => {
                     ))}
                 </div>
             )}
+
+            {/* Delete Modal */}
             {isModalOpen && selectedDocument && (
                 <DeleteDocumentModal
                     isOpen={isModalOpen}

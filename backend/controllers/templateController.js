@@ -22,6 +22,28 @@ const getTemplates = async (req, res) => {
     }
 };
 
+// Fetch Active Templates
+const getActiveTemplates = async (req, res) => {
+    try {
+        const { role, organization } = req.user;
+
+        // Query based on role (only active templates)
+        const query = role === 'admin'
+            ? { organization, status: 'active' } // Admins see active templates in their organization
+            : { requiredRole: role, organization, status: 'active' }; // Others see role-based active templates
+
+        const templates = await Template.find(query);
+
+        if (!templates || templates.length === 0) {
+            return res.status(404).json({ message: 'No active templates available for your role or organization' });
+        }
+
+        res.status(200).json(templates);
+    } catch (error) {
+        res.status(500).json({ message: 'Error fetching active templates', error: error.message });
+    }
+};
+
 // Fetch Template by ID
 const getTemplateById = async (req, res) => {
     try {
@@ -50,22 +72,23 @@ const getTemplateHeaderById = async (req, res) => {
         const { id } = req.params;
         const { role, organization } = req.user;
 
-        // Query based on role
+        // Query based on role and active status
         const query = role === 'admin'
-            ? { _id: id, organization }
-            : { _id: id, requiredRole: role, organization };
+            ? { _id: id, organization, status: 'active' }
+            : { _id: id, requiredRole: role, organization, status: 'active' };
 
-            const template = await Template.findOne(query).select('-content');
+        const template = await Template.findOne(query).select('-content');
 
         if (!template) {
-            return res.status(404).json({ message: 'Template not found or access denied' });
+            return res.status(404).json({ message: 'Template not found, inactive, or access denied' });
         }
 
         res.status(200).json(template);
     } catch (error) {
         res.status(500).json({ message: 'Error fetching template', error: error.message });
     }
-}
+};
+
 
 // Create Template
 const createTemplate = async (req, res) => {
@@ -125,23 +148,50 @@ const updateTemplate = async (req, res) => {
     }
 };
 
-// Delete Template
+// "Soft Delete" Template by Setting Status to Inactive
 const deleteTemplate = async (req, res) => {
     try {
         const { id } = req.params;
-        //const { organization } = req.user;
 
-        const template = await Template.findOneAndDelete({ _id: id });
+        // Update the template's status to "inactive"
+        const template = await Template.findByIdAndUpdate(
+            id, 
+            { status: 'inactive' }, 
+            { new: true } // Return the updated document
+        );
 
         if (!template) {
             return res.status(404).json({ message: 'Template not found or access denied' });
         }
 
-        res.status(200).json({ message: 'Template deleted successfully' });
+        res.status(200).json({ message: 'Template status set to inactive successfully', template });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting template', error: error.message });
+        res.status(500).json({ message: 'Error updating template status', error: error.message });
     }
 };
+
+// Recover Template
+const recoverTemplate = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Update the template's status to "active"
+        const template = await Template.findByIdAndUpdate(
+            id,
+            { status: 'active' }, // Set status to active
+            { new: true } // Return the updated document
+        );
+
+        if (!template) {
+            return res.status(404).json({ message: 'Template not found or access denied' });
+        }
+
+        res.status(200).json({ message: 'Template recovered successfully', template });
+    } catch (error) {
+        res.status(500).json({ message: 'Error recovering template', error: error.message });
+    }
+};
+
 
 const fetchDecisionTree = async (req, res) => {
     try {
@@ -152,7 +202,7 @@ const fetchDecisionTree = async (req, res) => {
         }
 
         // Build query based on user role
-        const query = { organization };
+        const query = { organization, status: 'active' }; // Include status: 'active'
 
         // If the user's role is not admin, filter by `requiredRole`
         if (role !== 'admin') {
@@ -202,4 +252,5 @@ const fetchDecisionTree = async (req, res) => {
 
 
 
-export { getTemplates, getTemplateById, getTemplateHeaderById, createTemplate, updateTemplate, deleteTemplate, fetchDecisionTree };
+
+export { getTemplates, getActiveTemplates, getTemplateById, getTemplateHeaderById, createTemplate, updateTemplate, deleteTemplate, recoverTemplate, fetchDecisionTree };

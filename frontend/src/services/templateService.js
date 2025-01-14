@@ -30,6 +30,19 @@ const fetchTemplates = async (token) => {
     }
 };
 
+const fetchActiveTemplates = async (token) => {
+    try {
+        const response = await axios.get(`${API_URL}/active`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Error fetching active templates');
+    }
+};
+
 const getTemplateById = async (templateId, token) => {
     try {
         const response = await axios.get(`${API_URL}/${templateId}`, {
@@ -101,4 +114,21 @@ const deleteTemplate = async (id, token) => {
     }
 };
 
-export { createTemplate, fetchTemplates, getTemplateById, updateTemplate, fetchDecisionTree, getTemplateHeaderById, deleteTemplate };
+const recoverTemplate = async (templateId, token) => {
+    try {
+        const response = await axios.put(
+            `${API_URL}/recover/${templateId}`,
+            {}, // No body required
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`, // Include auth token
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw new Error(error.response?.data?.message || 'Error recovering template');
+    }
+};
+
+export { createTemplate, fetchTemplates, fetchActiveTemplates, getTemplateById, updateTemplate, fetchDecisionTree, getTemplateHeaderById, deleteTemplate, recoverTemplate };

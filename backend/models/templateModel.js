@@ -37,6 +37,11 @@ const templateSchema = new mongoose.Schema(
             bottom: { type: Number, default: 1 },
             left: { type: Number, default: 1 },
             right: { type: Number, default: 1 }
+        },
+        status: {
+            type: String,
+            enum: ['active', 'inactive'],
+            default: 'active' // Default value
         }
     },
     {
