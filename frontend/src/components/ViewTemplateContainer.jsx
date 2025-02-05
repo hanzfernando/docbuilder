@@ -222,7 +222,7 @@ const ViewTemplateContainer = () => {
             {isDataLoaded ? pages.map((page) => (
                 <div key={page.id} style={{ display: currentPage === page.id ? 'block' : 'none' }}>
                     <Editor
-                        apiKey="0u9umuem86bbky3tbhbd94u9ebh6ocdmhar9om8kgfqiffmz"
+                        apiKey="nlhi2d7e29jjlh8lggzbzvaee9h7u3ba4hfywmh0v1skgixg"
                         value={page.content}
                         init={{
                             height: selectedPageSize.height,

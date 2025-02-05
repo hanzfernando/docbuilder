@@ -24,6 +24,10 @@ const TemplateContainer = () => {
     const [customSubtype, setCustomSubtype] = useState('');
     const [isCustomType, setIsCustomType] = useState(false);
     const [subtypeOptions, setSubtypeOptions] = useState([]);
+
+    const [templateSuggestions, setTemplateSuggestions] = useState([]);
+    const [filteredSuggestions, setFilteredSuggestions] = useState([]);
+
     const navigate = useNavigate();
 
     const DPI = 96; // Fixed DPI for page dimensions
@@ -248,6 +252,34 @@ const TemplateContainer = () => {
         loadDecisionTree();
     }, []);
 
+    useEffect(() => {
+        // Populate suggestions based on the decision tree
+        if (decisionTree) {
+            const names = [];
+            Object.keys(decisionTree).forEach((type) => {
+                if (decisionTree[type]?.subtype) {
+                    Object.keys(decisionTree[type].subtype).forEach((subtype) => {
+                        decisionTree[type].subtype[subtype].forEach((template) => {
+                            names.push(template.name);
+                        });
+                    });
+                }
+            });
+            setTemplateSuggestions(names);
+        }
+    }, [decisionTree]);
+
+    const handleTemplateNameChange = (e) => {
+        const input = e.target.value;
+        setDocumentName(input);
+
+        // Filter suggestions
+        const filtered = templateSuggestions.filter((name) =>
+            name.toLowerCase().includes(input.toLowerCase())
+        );
+        setFilteredSuggestions(filtered);
+    };
+
     // const handleTypeChange = (e) => {
     //     const selectedType = e.target.value;
     //     setDocumentType(selectedType);
@@ -266,41 +298,72 @@ const TemplateContainer = () => {
     // };
 
     useEffect(() => {
-        if (id) {
-            const loadTemplate = async () => {
-                try {
-                    const token = getToken();
-                    const templateData = await getTemplateById(id, token);
-                    setDocumentName(templateData.name);
-                    setDocumentType(templateData.type);
-                    setDocumentSubtype(templateData.subtype || '');
-                    setRequiredRole(templateData.requiredRole);
-                    setPaperSize(templateData.paperSize); // Lock paper size for updates
-                    setPages(
-                        templateData.content.split('<hr style="page-break-after: always;">').map((content, index) => ({
-                            id: index + 1,
-                            content,
-                        }))
-                    );
-                    if (templateData.margins) {
-                        setMargins(templateData.margins);
-                    }
-                    // Check for non-editable class in the content
-                    const hasNonEditable = templateData.content.includes('class="non-editable"');
-                    setStrictMode(hasNonEditable);
-    
-                    setIsUpdateMode(true);
-                    setEditorLoaded(true);
-                } catch (error) {
-                    console.error('Error loading template:', error.message);
-                    alert('Failed to load template. Please try again.');
-                }
-            };
-            loadTemplate();
-        }
-    }, [id]);
-    
-
+        if (!id) return; // Only run if we have an ID
+      
+        // Only load if decisionTree is ready (i.e. not empty)
+        if (!decisionTree || Object.keys(decisionTree).length === 0) return;
+      
+        const loadTemplate = async () => {
+          try {
+            const token = getToken();
+            const templateData = await getTemplateById(id, token);
+      
+            // Check if fetched type exists in our decisionTree
+            if (decisionTree[templateData.type]) {
+                // Known type => not custom
+                setIsCustomType(false);
+                setDocumentType(templateData.type);
+                setDocumentSubtype(templateData.subtype || '');
+        
+                // Here we populate the subtypes array for the user to select from
+                const subtypes = Object.keys(decisionTree[templateData.type].subtype || {});
+                setSubtypeOptions(subtypes);
+      
+            } else {             
+                setIsCustomType(true);
+                setCustomType(templateData.type);
+                setCustomSubtype(templateData.subtype || '');
+        
+                // Make the main dropdown show "custom"
+                setDocumentType('custom');
+        
+                // Prevent collision with normal subtype
+                setDocumentSubtype('');
+            }
+      
+            setDocumentName(templateData.name);
+            setRequiredRole(templateData.requiredRole);
+            setPaperSize(templateData.paperSize);
+      
+            // Split pages on the page-break <hr>
+            setPages(
+              templateData.content
+                .split('<hr style="page-break-after: always;">')
+                .map((content, index) => ({
+                  id: index + 1,
+                  content,
+                }))
+            );
+      
+            if (templateData.margins) {
+              setMargins(templateData.margins);
+            }
+      
+            // Check if "non-editable" class is in the content
+            const hasNonEditable = templateData.content.includes('class="non-editable"');
+            setStrictMode(hasNonEditable);
+      
+            setIsUpdateMode(true);
+            setEditorLoaded(true);
+          } catch (error) {
+            console.error('Error loading template:', error.message);
+            alert('Failed to load template. Please try again.');
+          }
+        };
+      
+        loadTemplate();
+      }, [id, decisionTree]);
+      
     const handleMarginChange = (e) => {
         const { name, value } = e.target;
         setMargins((prevMargins) => ({
@@ -459,15 +522,17 @@ const TemplateContainer = () => {
 
         const combinedContent = pages.map((page) => page.content).join('<hr style="page-break-after: always;">');
 
+        
         const templateData = {
             name: documentName,
             content: combinedContent,
-            type: documentType,
-            subtype: documentSubtype,
+            type: isCustomType ? customType : documentType,
+            subtype: isCustomType ? customSubtype : documentSubtype,
             requiredRole,
             paperSize,
             margins
-        };
+          };
+          
 
         try {
             const token = getToken();
@@ -590,16 +655,24 @@ const TemplateContainer = () => {
             <h1 className="text-2xl font-bold mb-4">Template Editor</h1>
             {/* Document Details */}
             <div className="mb-4 border p-4 rounded shadow">
-                <h2 className="text-xl font-medium mb-4">Template Information</h2>
+            <h2 className="text-xl font-medium mb-4">Template Information</h2>
                 <label className="block text-gray-700 font-medium mb-2">Template Name:</label>
-                <input
-                    type="text"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                    placeholder="Enter document name"
-                    className="w-full border rounded p-2 mb-4"
-                    required
-                />
+                <div className="relative">
+                    <input
+                        type="text"
+                        value={documentName}
+                        onChange={handleTemplateNameChange}
+                        placeholder="Enter document name"
+                        className="w-full border rounded p-2 mb-4"
+                        required
+                        list="template-name-suggestions"
+                    />
+                    <datalist id="template-name-suggestions">
+                        {filteredSuggestions.map((name, index) => (
+                            <option key={index} value={name} />
+                        ))}
+                    </datalist>
+                </div>
                 <label className="block text-gray-700 font-medium mb-2">Document Type:</label>
                 <select
                     value={isCustomType ? 'custom' : documentType}
@@ -650,15 +723,17 @@ const TemplateContainer = () => {
                         value={documentSubtype}
                         onChange={(e) => setDocumentSubtype(e.target.value)}
                         className="w-full border rounded p-2 mb-4"
-                        disabled={!subtypeOptions.length}
-                    >
+                        // Possibly some "disabled" logic here
+                          // This can lock the dropdown if length=0
+                        >
                         <option value="">Select Subtype</option>
                         {subtypeOptions.map((subtype) => (
                             <option key={subtype} value={subtype}>
-                                {subtype}
+                            {subtype}
                             </option>
                         ))}
                     </select>
+
                 )}
                 <label className="block text-gray-700 font-medium mb-2">Template For:</label>
                 <select
@@ -808,7 +883,7 @@ const TemplateContainer = () => {
                             style={{ display: currentPage === page.id ? 'block' : 'none' }}
                         >
                             <Editor
-                                apiKey="0u9umuem86bbky3tbhbd94u9ebh6ocdmhar9om8kgfqiffmz"
+                                apiKey="nlhi2d7e29jjlh8lggzbzvaee9h7u3ba4hfywmh0v1skgixg"
                                 value={page.content}
                                 init={{
                                     height: selectedPageSize.height,
